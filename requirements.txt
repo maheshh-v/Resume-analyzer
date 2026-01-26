@@ -1,6 +1,7 @@
 python-dotenv
 streamlit
 langchain
+langchain-text-splitters
 langchain-huggingface
 langchain-pinecone
 sentence-transformers
