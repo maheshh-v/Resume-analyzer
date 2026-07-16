@@ -27,6 +27,29 @@ const VALUE_PROPS = [
   },
 ];
 
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 1.46 14.97.5 12 .5A11 11 0 0 0 2.18 7.06L5.84 9.9c.87-2.6 3.3-4.53 6.16-4.53Z"
+      />
+    </svg>
+  );
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,26 +57,58 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const next = searchParams.get("next") ?? "/jobs";
+
+  async function handleGoogle() {
+    setError(null);
+    setNotice(null);
+    setLoading(true);
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
+    });
+    if (authError) {
+      setLoading(false);
+      setError(authError.message);
+    }
+    // On success the browser navigates to Google; no further action here.
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setLoading(true);
     const supabase = createClient();
 
-    const { error: authError } =
-      mode === "sign-in"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+    if (mode === "sign-up") {
+      const { data, error: authError } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      // If email confirmation is enabled in Supabase, no session is returned yet.
+      if (!data.session) {
+        setNotice("Account created. Check your email to confirm, then sign in. (Or disable email confirmation in Supabase to sign in instantly.)");
+        setMode("sign-in");
+        return;
+      }
+      router.push(next);
+      router.refresh();
+      return;
+    }
 
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (authError) {
       setError(authError.message);
       return;
     }
-
-    const next = searchParams.get("next") ?? "/jobs";
     router.push(next);
     router.refresh();
   }
@@ -107,6 +162,23 @@ function LoginForm() {
               {mode === "sign-in" ? "Sign in to your recruiter workspace." : "Set up a recruiter workspace in seconds."}
             </p>
           </div>
+          {notice && (
+            <Alert>
+              <AlertDescription>{notice}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
+            <GoogleIcon />
+            Continue with Google
+          </Button>
+
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
