@@ -23,7 +23,7 @@ T = TypeVar("T", bound=BaseModel)
 # Rough per-1M-token USD pricing for the cost line in the README. Best-effort estimate,
 # not billing-accurate — update as providers change pricing.
 _PRICING_PER_1M_TOKENS = {
-    "gemini-2.0-flash": {"input": 0.10, "output": 0.40},
+    "gemini-3.5-flash": {"input": 0.30, "output": 2.50},
     "gpt-4o-mini": {"input": 0.15, "output": 0.60},
 }
 
