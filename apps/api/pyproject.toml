@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 130
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy relationship() string forward-refs aren't resolvable by static analysis —
+# they're resolved at runtime by the mapper registry once app/models/__init__.py imports
+# every model module.
+"app/models/*.py" = ["F821"]
+# conftest.py must set env vars before importing any `app.*` module (config/db read env at
+# import time), so these imports are intentionally not at the top of the file.
+"tests/conftest.py" = ["E402"]
