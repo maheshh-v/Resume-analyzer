@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight, Loader2, Plus, Save, Trash2, Upload, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -23,17 +24,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useApi } from "@/hooks/use-api";
 import type { RequirementInput } from "@/lib/api-client";
 import type { Candidate } from "@/lib/api-types";
-
-function statusVariant(status: Candidate["status"]) {
-  switch (status) {
-    case "ready":
-      return "default" as const;
-    case "failed":
-      return "destructive" as const;
-    default:
-      return "secondary" as const;
-  }
-}
 
 function RequirementsEditor({ jobId, requirements, reviewed }: { jobId: string; requirements: RequirementInput[]; reviewed: boolean }) {
   const api = useApi();
@@ -62,73 +52,85 @@ function RequirementsEditor({ jobId, requirements, reviewed }: { jobId: string; 
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Requirements {reviewed ? <Badge className="ml-2">Reviewed</Badge> : <Badge variant="secondary" className="ml-2">Draft — review before interviewing</Badge>}</CardTitle>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          Requirements
+          {reviewed ? (
+            <Badge>Reviewed</Badge>
+          ) : (
+            <Badge variant="secondary">Draft — review before interviewing</Badge>
+          )}
+        </CardTitle>
         <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+          {save.isPending ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Save className="size-3.5" aria-hidden />}
           {save.isPending ? "Saving..." : "Save & mark reviewed"}
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Skill</TableHead>
-              <TableHead>Importance</TableHead>
-              <TableHead>Min years</TableHead>
-              <TableHead>Evidence criteria</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <Input
-                    value={row.skill}
-                    onChange={(e) => updateRow(i, { skill: e.target.value, normalized_skill: e.target.value.toLowerCase().trim() })}
-                    className="min-w-[10rem]"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select value={row.importance} onValueChange={(v) => updateRow(i, { importance: v as RequirementInput["importance"] })}>
-                    <SelectTrigger className="w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="must_have">Must-have</SelectItem>
-                      <SelectItem value="nice_to_have">Nice-to-have</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={row.min_years ?? ""}
-                    onChange={(e) => updateRow(i, { min_years: e.target.value === "" ? null : Number(e.target.value) })}
-                    className="w-20"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={row.evidence_criteria}
-                    onChange={(e) => updateRow(i, { evidence_criteria: e.target.value })}
-                    className="min-w-[16rem]"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => removeRow(i)}>
-                    Remove
-                  </Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Skill</TableHead>
+                <TableHead>Importance</TableHead>
+                <TableHead>Min years</TableHead>
+                <TableHead>What would count as evidence</TableHead>
+                <TableHead />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <Input
+                      value={row.skill}
+                      onChange={(e) => updateRow(i, { skill: e.target.value, normalized_skill: e.target.value.toLowerCase().trim() })}
+                      className="min-w-[10rem]"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select value={row.importance} onValueChange={(v) => updateRow(i, { importance: v as RequirementInput["importance"] })}>
+                      <SelectTrigger className="w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="must_have">Must-have</SelectItem>
+                        <SelectItem value="nice_to_have">Nice-to-have</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={row.min_years ?? ""}
+                      onChange={(e) => updateRow(i, { min_years: e.target.value === "" ? null : Number(e.target.value) })}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.evidence_criteria}
+                      onChange={(e) => updateRow(i, { evidence_criteria: e.target.value })}
+                      className="min-w-[16rem]"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => removeRow(i)} aria-label="Remove requirement">
+                      <Trash2 className="size-4 text-muted-foreground" aria-hidden />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         <Button variant="outline" size="sm" onClick={addRow}>
+          <Plus className="size-3.5" aria-hidden />
           Add requirement
         </Button>
+        {save.isError && <p className="text-sm text-destructive">{(save.error as Error).message}</p>}
       </CardContent>
     </Card>
   );
@@ -155,7 +157,14 @@ function AddCandidateDialog({ jobId }: { jobId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm">Add candidate</Button>} />
+      <DialogTrigger
+        render={
+          <Button size="sm">
+            <UserPlus className="size-3.5" aria-hidden />
+            Add candidate
+          </Button>
+        }
+      />
       <DialogContent>
         <form
           onSubmit={(e) => {
@@ -179,6 +188,7 @@ function AddCandidateDialog({ jobId }: { jobId: string }) {
               <Label htmlFor="github">GitHub username (optional)</Label>
               <Input id="github" value={githubLogin} onChange={(e) => setGithubLogin(e.target.value)} placeholder="Only used as supporting evidence" />
             </div>
+            {createCandidate.isError && <p className="text-sm text-destructive">{(createCandidate.error as Error).message}</p>}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={createCandidate.isPending}>
@@ -191,7 +201,7 @@ function AddCandidateDialog({ jobId }: { jobId: string }) {
   );
 }
 
-function ResumeUploadCell({ candidate, jobId }: { candidate: Candidate; jobId: string }) {
+function CandidateStatusCell({ candidate, jobId }: { candidate: Candidate; jobId: string }) {
   const api = useApi();
   const queryClient = useQueryClient();
 
@@ -200,19 +210,35 @@ function ResumeUploadCell({ candidate, jobId }: { candidate: Candidate; jobId: s
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["candidates", jobId] }),
   });
 
-  if (candidate.status === "processing") {
-    return <span className="text-xs text-muted-foreground">Processing...</span>;
+  if (candidate.status === "processing" || upload.isPending) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin" aria-hidden />
+        Extracting claims &amp; gathering evidence...
+      </span>
+    );
   }
   if (candidate.status === "ready") {
-    return <span className="text-xs text-muted-foreground">{candidate.status_detail}</span>;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-verdict-verified">
+        <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+        {candidate.status_detail ?? "Ready"}
+      </span>
+    );
   }
   if (candidate.status === "failed") {
-    return <span className="text-xs text-destructive">{candidate.status_detail ?? "Failed"}</span>;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-destructive">
+        <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+        {candidate.status_detail ?? "Failed"}
+      </span>
+    );
   }
 
   return (
-    <label className="cursor-pointer text-xs text-primary underline">
-      Upload resume
+    <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+      <Upload className="size-3.5" aria-hidden />
+      Upload resume (PDF)
       <input
         type="file"
         accept="application/pdf"
@@ -239,7 +265,7 @@ export default function JobDetailPage() {
   });
 
   if (jobQuery.isLoading) {
-    return <Skeleton className="h-64 rounded-lg" />;
+    return <Skeleton className="h-64 rounded-xl" />;
   }
   if (jobQuery.isError || !jobQuery.data) {
     return <p className="text-sm text-destructive">Failed to load job.</p>;
@@ -250,8 +276,12 @@ export default function JobDetailPage() {
   return (
     <div className="space-y-6">
       <div>
+        <Link href="/jobs" className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-3.5" aria-hidden />
+          All jobs
+        </Link>
         <h1 className="text-2xl font-semibold">{job.title}</h1>
-        <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground line-clamp-3">{job.jd_raw}</p>
+        <p className="mt-1 line-clamp-3 text-sm whitespace-pre-wrap text-muted-foreground">{job.jd_raw}</p>
       </div>
 
       <RequirementsEditor jobId={job.id} requirements={job.requirements} reviewed={job.requirements_status === "reviewed"} />
@@ -262,18 +292,19 @@ export default function JobDetailPage() {
           <AddCandidateDialog jobId={job.id} />
         </CardHeader>
         <CardContent>
-          {candidatesQuery.isLoading && <Skeleton className="h-24 rounded" />}
+          {candidatesQuery.isLoading && <Skeleton className="h-24 rounded-lg" />}
           {candidatesQuery.data && candidatesQuery.data.length === 0 && (
-            <p className="text-sm text-muted-foreground">No candidates yet.</p>
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              No candidates yet — add one, upload their resume, and the evidence pipeline takes it from there.
+            </p>
           )}
           {candidatesQuery.data && candidatesQuery.data.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Resume</TableHead>
-                  <TableHead />
+                  <TableHead>Pipeline</TableHead>
+                  <TableHead className="text-right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -281,15 +312,16 @@ export default function JobDetailPage() {
                   <TableRow key={candidate.id}>
                     <TableCell className="font-medium">{candidate.name}</TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(candidate.status)}>{candidate.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <ResumeUploadCell candidate={candidate} jobId={job.id} />
+                      <CandidateStatusCell candidate={candidate} jobId={job.id} />
                     </TableCell>
                     <TableCell className="text-right">
                       {candidate.status === "ready" && (
-                        <Link href={`/jobs/${job.id}/candidates/${candidate.id}`} className="text-sm text-primary underline">
-                          View details
+                        <Link
+                          href={`/jobs/${job.id}/candidates/${candidate.id}`}
+                          className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline"
+                        >
+                          View evidence
+                          <ChevronRight className="size-4" aria-hidden />
                         </Link>
                       )}
                     </TableCell>

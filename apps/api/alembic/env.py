@@ -15,7 +15,9 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# configparser treats % as interpolation syntax, so URL-encoded passwords (e.g. %40 for @)
+# must be escaped before being handed to alembic's config.
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:

@@ -175,3 +175,29 @@ export interface Decision {
   rationale: string;
   decided_by_user_id: string;
 }
+
+export type LedgerActorType = "human" | "candidate" | "model" | "system";
+
+export interface LedgerEvent {
+  seq: number;
+  event_type: string;
+  actor_type: LedgerActorType;
+  actor_id: string | null;
+  payload: Record<string, unknown>;
+  prev_hash: string;
+  event_hash: string;
+  created_at: string;
+}
+
+export interface Ledger {
+  candidate_id: string;
+  events: LedgerEvent[];
+}
+
+export interface LedgerVerification {
+  ok: boolean;
+  event_count: number;
+  first_broken_seq: number | null;
+  content_mismatches: { seq: number; event_type: string; problem: string }[];
+  verified_at: string;
+}

@@ -166,13 +166,25 @@ Tables: `users(auth_id)` · `jobs` · `job_requirements` · `candidates` ·
 `claims(claim_text, normalized_skill, source_span_start/end, extractor_model, prompt_version)` ·
 `evidence(claim_id, source_type, verdict, summary, artifact_url, model, prompt_version)` ·
 `interviews(token, status)` · `interview_questions(targets_claim_id, rubric, rationale)` ·
-`interview_answers(answer_text, behavioral_flags)` · `decisions(decided_by_user_id, verdict, rationale)`.
+`interview_answers(answer_text, behavioral_flags)` · `decisions(decided_by_user_id, verdict, rationale)` ·
+`ledger_events(candidate_id, seq, event_type, actor_type, payload, prev_hash, event_hash)`.
 
 Every owned table carries `owner_user_id`.
 
 **Two touches that cost two columns and read as production experience:**
 1. `model` + `prompt_version` on every AI-generated row → any verdict is reproducible months later.
 2. `evidence` is **append-only** → reconstruct exactly what the system knew at any past moment.
+
+**The Evidence Ledger (`ledger_events`)** hardens touch 2 from a convention into a guarantee:
+a per-candidate SHA-256 hash chain (each event's hash covers its content *and* the previous
+event's hash, from a genesis sentinel). Every consequential action — ingestion, extraction,
+each evidence pass, every interview question and answer, the human decision — is appended on
+the **same transaction** as the write it describes, so the ledger can never assert something
+the database doesn't show. Free text stored elsewhere (answers, rationales) is referenced by
+content hash, so editing those rows later is equally detectable. `GET
+/candidates/{id}/ledger/verify` replays the chain and re-attests content on demand. Alter,
+insert, or delete anything after the fact and verification pinpoints the exact event. See
+`app/ledger.py`; the emission points are in `pipeline/orchestrate.py` and the routers.
 
 **There is no `score` column, anywhere, by construction.** The only verdict in the system
 lives in `decisions`, and it has a `user_id`.

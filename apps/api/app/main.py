@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.db.session import engine
 from app.models import Base
-from app.routers import candidates, health, interviews, jobs, reports
+from app.routers import candidates, health, interviews, jobs, ledger, reports
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(candidates.router)
     app.include_router(interviews.router)
     app.include_router(reports.router)
+    app.include_router(ledger.router)
 
     return app
 

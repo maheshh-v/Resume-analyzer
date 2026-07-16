@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.dependencies import get_current_user
 from app.db.session import get_db
+from app.ledger import append_event, sha256_text
 from app.models.decision import Decision
 from app.models.evidence import Evidence
 from app.models.interview import Interview, InterviewQuestion
@@ -110,6 +111,19 @@ async def record_decision(
         rationale=payload.rationale,
     )
     db.add(decision)
+    await db.flush()
+    await append_event(
+        db,
+        candidate_id=candidate.id,
+        event_type="decision_recorded",
+        actor_type="human",
+        actor_id=user.email,
+        payload={
+            "decision_id": decision.id,
+            "verdict": payload.verdict,
+            "rationale_sha256": sha256_text(payload.rationale),
+        },
+    )
     await db.commit()
     await db.refresh(decision)
     return decision

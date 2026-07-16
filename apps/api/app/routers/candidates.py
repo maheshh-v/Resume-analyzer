@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.dependencies import get_current_user
 from app.db.session import SessionLocal, get_db
+from app.ledger import append_event
 from app.models.candidate import Candidate
 from app.models.evidence import Evidence
 from app.models.job import Job
@@ -49,6 +50,15 @@ async def create_candidate(
         status="pending",
     )
     db.add(candidate)
+    await db.flush()
+    await append_event(
+        db,
+        candidate_id=candidate.id,
+        event_type="candidate_created",
+        actor_type="human",
+        actor_id=user.email,
+        payload={"name": payload.name, "job_id": job_id},
+    )
     await db.commit()
     await db.refresh(candidate)
     return candidate

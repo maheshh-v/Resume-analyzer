@@ -9,6 +9,8 @@ import type {
   Job,
   JobRequirement,
   JobSummary,
+  Ledger,
+  LedgerVerification,
 } from "./api-types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -86,6 +88,11 @@ export function createApiClient(accessToken: string | null) {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+
+    getLedger: (candidateId: string) => request<Ledger>(`/candidates/${candidateId}/ledger`, accessToken),
+
+    verifyLedger: (candidateId: string) =>
+      request<LedgerVerification>(`/candidates/${candidateId}/ledger/verify`, accessToken),
   };
 }
 

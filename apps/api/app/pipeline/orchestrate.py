@@ -14,6 +14,7 @@ import httpx
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.config import get_settings
+from app.ledger import append_event
 from app.llm.client import LLMClient, get_llm_client
 from app.models.candidate import Candidate
 from app.models.claim import Claim
@@ -71,6 +72,13 @@ async def process_candidate_resume(
             )
             db.add(document)
             await db.flush()
+            await append_event(
+                db,
+                candidate_id=candidate_id,
+                event_type="resume_ingested",
+                actor_type="system",
+                payload={"filename": filename, "file_sha256": content_hash, "size_bytes": len(file_bytes)},
+            )
 
             claim_result = await extract_claims(extracted.full_text, llm)
             claim_rows: list[Claim] = []
@@ -93,6 +101,17 @@ async def process_candidate_resume(
                 db.add(claim)
                 claim_rows.append(claim)
             await db.flush()
+            await append_event(
+                db,
+                candidate_id=candidate_id,
+                event_type="claims_extracted",
+                actor_type="model",
+                actor_id=claim_result.claims[0].extractor_model if claim_result.claims else None,
+                payload={
+                    "claim_count": len(claim_rows),
+                    "discarded_uncitable": claim_result.discarded_uncitable,
+                },
+            )
 
             consistency_inputs = [
                 ConsistencyClaim(
@@ -107,7 +126,8 @@ async def process_candidate_resume(
                 )
                 for c in claim_rows
             ]
-            for finding in run_consistency_checks(consistency_inputs):
+            consistency_findings = run_consistency_checks(consistency_inputs)
+            for finding in consistency_findings:
                 for claim_id in finding.claim_ids:
                     db.add(
                         Evidence(
@@ -121,6 +141,16 @@ async def process_candidate_resume(
                             prompt_version="consistency.v1",
                         )
                     )
+            await append_event(
+                db,
+                candidate_id=candidate_id,
+                event_type="consistency_checked",
+                actor_type="system",
+                payload={
+                    "claims_checked": len(consistency_inputs),
+                    "contradictions_found": len(consistency_findings),
+                },
+            )
 
             if candidate.github_login:
                 skill_claims = [(c.id, c.normalized_skill) for c in claim_rows if c.normalized_skill]
@@ -149,6 +179,13 @@ async def process_candidate_resume(
                             prompt_version="github.v1",
                         )
                     )
+                await append_event(
+                    db,
+                    candidate_id=candidate_id,
+                    event_type="github_evidence",
+                    actor_type="system",
+                    payload={"github_login": candidate.github_login, "evidence_count": len(github_drafts)},
+                )
 
             candidate.status = "ready"
             candidate.status_detail = (

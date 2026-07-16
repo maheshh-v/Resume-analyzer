@@ -9,6 +9,7 @@ from app.models.document import Document
 from app.models.evidence import Evidence
 from app.models.interview import Interview, InterviewAnswer, InterviewQuestion
 from app.models.job import Job, JobRequirement
+from app.models.ledger import LedgerEvent
 from app.models.user import User
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "InterviewQuestion",
     "InterviewAnswer",
     "Decision",
+    "LedgerEvent",
 ]

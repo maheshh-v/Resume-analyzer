@@ -18,6 +18,7 @@ from app.auth.dependencies import get_current_user
 from app.config import get_settings
 from app.db.base import as_utc
 from app.db.session import get_db
+from app.ledger import append_event, sha256_text
 from app.llm.client import LLMClient, get_llm_client
 from app.models.candidate import Candidate
 from app.models.evidence import Evidence
@@ -119,6 +120,19 @@ async def create_interview(
         target_claims=target_claims,
     )
     db.add(interview)
+    await db.flush()
+    await append_event(
+        db,
+        candidate_id=candidate.id,
+        event_type="interview_created",
+        actor_type="human",
+        actor_id=user.email,
+        payload={
+            "interview_id": interview.id,
+            "target_claim_count": len(target_claims),
+            "expires_at": interview.expires_at.isoformat(),
+        },
+    )
     await db.commit()
     await db.refresh(interview)
 
@@ -190,6 +204,13 @@ async def get_interview_state(token: str, db: AsyncSession = Depends(get_db)) ->
     if action.kind == "done":
         interview.status = "submitted"
         interview.submitted_at = datetime.now(timezone.utc)
+        await append_event(
+            db,
+            candidate_id=interview.candidate_id,
+            event_type="interview_submitted",
+            actor_type="candidate",
+            payload={"interview_id": interview.id, "questions_answered": len(interview.questions)},
+        )
         await db.commit()
         return InterviewStateOut(status=interview.status, current_question=None, questions_answered=len(interview.questions), is_complete=True)
 
@@ -232,6 +253,21 @@ async def get_interview_state(token: str, db: AsyncSession = Depends(get_db)) ->
         rationale=generated.rationale,
     )
     db.add(question)
+    await db.flush()
+    await append_event(
+        db,
+        candidate_id=interview.candidate_id,
+        event_type="question_asked",
+        actor_type="model",
+        payload={
+            "interview_id": interview.id,
+            "question_id": question.id,
+            "ordinal": question.ordinal,
+            "depth": question.depth,
+            "targets_claim_id": question.targets_claim_id,
+            "question_sha256": sha256_text(question.question_text),
+        },
+    )
     await db.commit()
     await db.refresh(question)
 
@@ -286,6 +322,21 @@ async def submit_answer(
         review_flags=flags,
     )
     db.add(answer)
+    await db.flush()
+    await append_event(
+        db,
+        candidate_id=interview.candidate_id,
+        event_type="answer_recorded",
+        actor_type="candidate",
+        payload={
+            "interview_id": interview.id,
+            "question_id": question.id,
+            "answer_id": answer.id,
+            "answer_sha256": sha256_text(answer_text),
+            "specificity_verdict": evaluation.specificity_verdict,
+            "review_flags": flags,
+        },
+    )
 
     # Write interview evidence for the targeted claim: a strong answer verifies it, a weak
     # one leaves it at whatever the evidence pass already established (never contradicts on

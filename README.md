@@ -9,6 +9,11 @@ of question a second ChatGPT window can't answer. It ends in a cited hiring summ
 **It never emits a score or an auto hire/reject decision.** A human decides; the system
 records who, when, and why.
 
+Every step of that process — ingestion, extraction, each evidence pass, every interview
+exchange, the final human decision — is sealed into a per-candidate, SHA-256 hash-chained
+**Evidence Ledger**. One click replays the chain and proves the record hasn't been altered
+since the moment it was written (see §16.1 of the product plan for why this is the moat).
+
 See [`docs/PRODUCT_PLAN.md`](docs/PRODUCT_PLAN.md) for the product thesis and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the technical blueprint.
 
@@ -67,35 +72,26 @@ npm run dev
 
 Visit `http://localhost:3000`.
 
-## What needs your own credentials before it's fully live
+## Environment setup (fresh clone)
 
-This was built and tested entirely offline — SQLite instead of Supabase Postgres, a fake LLM
-provider instead of Gemini/OpenAI, no real GitHub token, no Langfuse project. That's
-deliberate: none of those accounts could be created on your behalf. Before this is a live
-product you can actually demo end-to-end, you need to:
+The `.env` files are gitignored, so a fresh clone needs:
 
-1. **Create a Supabase project** (free tier is fine) → Project Settings → API. Copy the URL,
-   anon key, and service role key into both `.env` files. This gives you real Postgres,
-   Auth, and Storage — Supabase is the only backing service the app needs.
-2. **Get a Gemini API key** (default provider — [aistudio.google.com](https://aistudio.google.com)) or an
-   OpenAI key, and set `GEMINI_API_KEY`/`OPENAI_API_KEY` + `LLM_PROVIDER` in `apps/api/.env`.
-3. **Run the Alembic migration** against your Supabase Postgres: `alembic upgrade head`
-   (from `apps/api`, with `DATABASE_URL` pointed at Supabase).
-4. **Create a Supabase Storage bucket** named `resumes` (or update `SUPABASE_STORAGE_BUCKET`).
+1. **A Supabase project** (free tier is fine) → Project Settings → API. Copy the URL,
+   anon key, and service role key into both `.env` files. This gives you Postgres, Auth,
+   and Storage — Supabase is the only backing service the app needs.
+2. **A Gemini API key** (default provider — [aistudio.google.com](https://aistudio.google.com)) or an
+   OpenAI key: set `GEMINI_API_KEY`/`OPENAI_API_KEY` + `LLM_PROVIDER` in `apps/api/.env`.
+   ⚠ Gemini **2.x models return 404 for API keys created after ~2026** ("no longer available
+   to new users") even though they still appear in the models list — use `gemini-3.5-flash`
+   (the default).
+3. **The Alembic migrations** against your Supabase Postgres: `alembic upgrade head`
+   (from `apps/api`, with `DATABASE_URL` pointed at Supabase — use the `postgresql+asyncpg://`
+   prefix and URL-encode special characters in the password, e.g. `@` → `%40`).
+4. **A Supabase Storage bucket** named `resumes` (or update `SUPABASE_STORAGE_BUCKET`).
 5. *(Optional)* a GitHub personal access token for the opportunistic GitHub evidence pass, and
    Langfuse keys for LLM tracing.
 
-Everything else — the claim-extraction pipeline, the adaptive interview state machine, the
-citation-validation guardrail, JD/resume matching, the hiring summary — is fully implemented
-and covered by the automated test suite, not stubbed.
-
-### Known gaps to verify once you add real keys
-
-- The Gemini/OpenAI/Langfuse SDK calls (`apps/api/app/llm/provider.py`, `app/llm/client.py`)
-  are written against each SDK's documented API but were never exercised against a live
-  endpoint in this session — there was no key to test with. Sanity-check a real call once you
-  add keys; the FakeProvider-backed tests only prove the *pipeline logic* around those calls
-  is correct, not the SDK integration itself.
-- Cost/latency budgets (target < $0.15, < 90s per candidate per `docs/ARCHITECTURE.md`) are
-  designed for but not yet measured against a live model — there's nothing to measure without
-  a key.
+The live Gemini integration has been verified end-to-end through the real pipeline (JD
+extraction with citation spans resolving verbatim). Cost/latency budgets (target < $0.15,
+< 90s per candidate per `docs/ARCHITECTURE.md`) are designed for but not yet formally
+measured — run a few candidates and check the Langfuse traces once keys are in.

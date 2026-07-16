@@ -576,6 +576,20 @@ One screen. Skimmable in 60 seconds. Every claim clickable to its artifact.
 
 **V4 — Optional, only if a customer demands scoring.** If you ever emit a simplified output, you become an AEDT and you need bias-audit tooling: demographic selection rates, impact ratios, the LL144 artifact pack. **Design it so this stays optional forever.** The moment it's on by default, you've become everyone else.
 
+### 16.1 The moat that shipped in V1: the Evidence Ledger
+
+Calibration (V3) is the *earned* moat — it needs outcomes data and time. The **Evidence Ledger** is the moat you can ship on day one, and it compounds while you wait.
+
+Every consequential action in a candidate's verification — resume fingerprinted, claims extracted, consistency checked, every interview question and answer, the human decision — is appended to a **per-candidate, SHA-256 hash-chained, append-only log**, committed in the same transaction as the action it records. Free text (answers, rationales) is attested by content hash. One endpoint replays the chain and re-verifies every attestation; any post-hoc edit, insertion, or deletion is pinpointed to the exact event.
+
+Why this is a real moat and not a feature:
+
+1. **It's regulatory gravity, monetized.** The EU AI Act puts hiring AI in the high-risk class — record-keeping and traceability are *obligations*, and LL144-style laws keep spreading. Every competitor sells a score they can't explain; you sell a record that survives a lawyer. "Show me how this decision was reached, eight months later, provably unaltered" is a question only this product answers.
+2. **It cannot be retrofitted.** A competitor can copy the feature next quarter — but their customers' past decisions are unattested forever. Your customers accumulate tamper-evident decision history from day one; the value of switching away *grows with every candidate processed*. That's the same asymmetry that makes audit-log vendors sticky.
+3. **It's honest by construction, which is the brand.** The ledger records what the system did *and* what it skipped, with the model + prompt version on every AI action. The pitch writes itself: *we can't be caught misrepresenting the process, because the process notarizes itself.*
+
+Cost to build: one table, one service module, ~10 emission points, two endpoints. Cost to fake: infeasible after the fact. That ratio is what "smart but powerful" looks like.
+
 **Never build:** sourcing · HRMS · payroll · CRM · analytics dashboards · a chatbot · proctoring · anything that scores how a person sounds.
 
 ---
