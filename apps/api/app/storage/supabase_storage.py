@@ -1,0 +1,35 @@
+"""Thin wrapper over the Supabase Storage REST API.
+
+FastAPI is the only thing that touches Storage (see docs/ARCHITECTURE.md section 2) — the
+browser never gets a Storage credential. Uses the service role key over HTTPS; no Supabase
+SDK dependency needed for this one call shape.
+"""
+
+import httpx
+
+from app.config import get_settings
+
+
+class StorageError(Exception):
+    pass
+
+
+async def upload_resume(*, candidate_id: str, filename: str, content: bytes) -> str:
+    """Uploads to `{bucket}/{candidate_id}/{filename}` and returns the storage path
+    (not a public URL — resumes are private; fetch via a signed URL or the service key)."""
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise StorageError("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not configured")
+
+    storage_path = f"{candidate_id}/{filename}"
+    url = f"{settings.supabase_url}/storage/v1/object/{settings.supabase_storage_bucket}/{storage_path}"
+    headers = {
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+        "Content-Type": "application/pdf",
+        "x-upsert": "true",
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, headers=headers, content=content)
+    if response.status_code >= 400:
+        raise StorageError(f"Supabase Storage upload failed ({response.status_code}): {response.text}")
+    return storage_path
