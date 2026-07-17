@@ -11,6 +11,7 @@ import type {
   JobSummary,
   Ledger,
   LedgerVerification,
+  LlmCostSummary,
 } from "./api-types";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -95,6 +96,9 @@ export function createApiClient(accessToken: string | null) {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+
+    getLlmCosts: (candidateId: string) =>
+      request<LlmCostSummary>(`/api/v1/candidates/${candidateId}/llm-costs`, accessToken),
 
     getLedger: (candidateId: string) => request<Ledger>(`/candidates/${candidateId}/ledger`, accessToken),
 

@@ -201,3 +201,25 @@ export interface LedgerVerification {
   content_mismatches: { seq: number; event_type: string; problem: string }[];
   verified_at: string;
 }
+
+// Mirrors app/schemas/observability.py — per-candidate LLM cost/latency breakdown.
+export interface LlmStageCost {
+  pipeline_stage: string;
+  calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  latency_ms_total: number;
+  max_retry_count: number;
+  models: string[];
+}
+
+export interface LlmCostSummary {
+  candidate_id: string;
+  total_cost_usd: number;
+  total_calls: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_latency_ms: number;
+  per_stage: LlmStageCost[];
+}
