@@ -28,6 +28,12 @@ class Settings(BaseSettings):
 
     github_token: str = ""
 
+    # Optional evidence connectors, opt-in per source. Off by default so a fresh deploy never
+    # makes surprise outbound calls; each still routes through the URL+substring guardrail.
+    enable_semantic_scholar: bool = False
+    enable_google_patents: bool = False
+    enable_package_ownership: bool = False
+
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
