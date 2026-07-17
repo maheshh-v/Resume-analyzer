@@ -10,6 +10,7 @@ from app.models.evidence import Evidence
 from app.models.interview import Interview, InterviewAnswer, InterviewQuestion
 from app.models.job import Job, JobRequirement
 from app.models.ledger import LedgerEvent
+from app.models.llm_call_log import LLMCallLog
 from app.models.user import User
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "InterviewAnswer",
     "Decision",
     "LedgerEvent",
+    "LLMCallLog",
 ]
