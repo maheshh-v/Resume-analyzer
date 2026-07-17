@@ -34,6 +34,10 @@ class Settings(BaseSettings):
 
     interview_token_ttl_hours: int = 72
 
+    # Where the eval harness writes its results (latest.json / latest.md). Empty -> the router
+    # computes the default repo-root `evals/results` path. Set in tests to point at a fixture dir.
+    benchmarks_results_dir: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
