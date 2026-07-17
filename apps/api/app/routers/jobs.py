@@ -9,6 +9,7 @@ from app.llm.client import LLMClient, get_llm_client
 from app.models.candidate import Candidate
 from app.models.job import Job, JobRequirement
 from app.models.user import User
+from app.observability.context import llm_call_context
 from app.pipeline.extract_jd import extract_job_requirements
 from app.schemas.job import JobCreate, JobOut, JobRequirementsReplace, JobSummaryOut
 
@@ -44,7 +45,10 @@ async def create_job(
     db.add(job)
     await db.flush()
 
-    drafts = await extract_job_requirements(payload.jd_raw, llm)
+    # No candidate yet at JD time; job_id tags the trace, and cost logging (candidate-scoped)
+    # correctly skips this call.
+    with llm_call_context(job_id=job.id):
+        drafts = await extract_job_requirements(payload.jd_raw, llm)
     for ordinal, draft in enumerate(drafts):
         db.add(
             JobRequirement(

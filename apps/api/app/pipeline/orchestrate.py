@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.config import get_settings
 from app.ledger import append_event
 from app.llm.client import LLMClient, get_llm_client
+from app.observability.context import llm_call_context
 from app.models.candidate import Candidate
 from app.models.claim import Claim
 from app.models.document import Document
@@ -80,7 +81,8 @@ async def process_candidate_resume(
                 payload={"filename": filename, "file_sha256": content_hash, "size_bytes": len(file_bytes)},
             )
 
-            claim_result = await extract_claims(extracted.full_text, llm)
+            with llm_call_context(candidate_id=candidate_id, job_id=candidate.job_id):
+                claim_result = await extract_claims(extracted.full_text, llm)
             claim_rows: list[Claim] = []
             for draft in claim_result.claims:
                 claim = Claim(
@@ -198,3 +200,7 @@ async def process_candidate_resume(
             candidate.status_detail = str(exc)[:500]
             await db.commit()
             logger.exception("process_candidate_resume failed for candidate %s", candidate_id)
+
+    # Flush cost telemetry now that all pipeline commits are done — no lock contention, and the
+    # per-candidate cost endpoint is populated the moment processing finishes.
+    await llm.drain_cost_logs()

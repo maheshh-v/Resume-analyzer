@@ -8,6 +8,11 @@ os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{_TEST_DB_PATH}"
 os.environ["LLM_PROVIDER"] = "fake"
 os.environ["SUPABASE_JWKS_URL"] = ""
 os.environ["SUPABASE_URL"] = ""
+# Tracing is a no-op by default in tests (the intended unconfigured path) so the suite never
+# fires real Langfuse telemetry. Tests that need tracing on build an explicit Settings + a fake
+# Langfuse client (see test_observability.py).
+os.environ["LANGFUSE_PUBLIC_KEY"] = ""
+os.environ["LANGFUSE_SECRET_KEY"] = ""
 
 import pytest
 import pytest_asyncio
