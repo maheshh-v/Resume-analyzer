@@ -30,7 +30,14 @@ async function request<T>(path: string, authToken: string | null, init?: Request
   if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
   if (init?.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
 
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  } catch {
+    // fetch() itself threw (server down, network drop, CORS-less 500). Never let the raw
+    // "Failed to fetch" TypeError reach the UI — status 0 marks it as a connectivity error.
+    throw new ApiError(0, "We couldn't reach the server. Check your connection and try again.");
+  }
   if (!response.ok) {
     const detail = await response
       .json()

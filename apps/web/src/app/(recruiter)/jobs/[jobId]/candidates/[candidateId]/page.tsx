@@ -10,15 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ErrorState, InlineError } from "@/components/states";
 import { ImportanceBadge, MatchBadge, VerdictBadge } from "@/components/verdict-badge";
 import { useApi } from "@/hooks/use-api";
 import type { Evidence } from "@/lib/api-types";
+import { friendlyError } from "@/lib/errors";
 
 export default function CandidateDetailPage() {
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId: string }>();
   const api = useApi();
   const [interviewLink, setInterviewLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   const detailQuery = useQuery({ queryKey: ["candidate", candidateId], queryFn: () => api.getCandidateDetail(candidateId) });
 
@@ -31,10 +34,24 @@ export default function CandidateDetailPage() {
   });
 
   if (detailQuery.isLoading) {
-    return <Skeleton className="h-96 rounded-xl" />;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-28 rounded-md" />
+        <Skeleton className="h-9 w-1/2 rounded-md" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    );
   }
   if (detailQuery.isError || !detailQuery.data) {
-    return <p className="text-sm text-destructive">Failed to load candidate.</p>;
+    return (
+      <ErrorState
+        title="Couldn't load this candidate"
+        message={friendlyError(detailQuery.error)}
+        onRetry={() => detailQuery.refetch()}
+        retrying={detailQuery.isRefetching}
+      />
+    );
   }
 
   const { candidate, claims, evidence, matches } = detailQuery.data;
@@ -45,26 +62,31 @@ export default function CandidateDetailPage() {
 
   async function copyLink() {
     if (!interviewLink) return;
-    await navigator.clipboard.writeText(interviewLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(interviewLink);
+      setCopied(true);
+      setCopyError(false);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopyError(true); // clipboard can be blocked (permissions/insecure context)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="fade-up flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link
             href={`/jobs/${jobId}`}
-            className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-3.5" aria-hidden />
             Back to job
           </Link>
-          <h1 className="text-2xl font-semibold">{candidate.name}</h1>
-          {candidate.email && <p className="text-sm text-muted-foreground">{candidate.email}</p>}
+          <h1 className="text-[1.75rem] font-semibold tracking-tight">{candidate.name}</h1>
+          {candidate.email && <p className="mt-0.5 text-sm text-muted-foreground">{candidate.email}</p>}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link href={`/jobs/${jobId}/candidates/${candidateId}/report`}>
             <Button variant="outline">
               <FileCheck2 className="size-4" aria-hidden />
@@ -82,13 +104,16 @@ export default function CandidateDetailPage() {
         </div>
       </div>
 
-      {createInterview.isError && <p className="text-sm text-destructive">{(createInterview.error as Error).message}</p>}
+      {createInterview.isError && (
+        <InlineError message={friendlyError(createInterview.error, "Couldn't generate the interview. Please try again.")} />
+      )}
       {interviewLink && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="flex items-center justify-between gap-4 py-4">
-            <div className="min-w-0">
+        <Card className="fade-up border-primary/25 bg-primary/[0.04] ring-primary/20">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <div className="min-w-0 space-y-1">
               <p className="text-sm font-medium">Interview link ready — send this to the candidate.</p>
               <p className="truncate font-mono text-xs text-muted-foreground">{interviewLink}</p>
+              {copyError && <p className="text-xs text-destructive">Couldn&apos;t copy automatically — select the link above and copy it manually.</p>}
             </div>
             <Button variant="outline" size="sm" onClick={copyLink}>
               {copied ? <Check className="size-3.5 text-verdict-verified" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
@@ -98,14 +123,14 @@ export default function CandidateDetailPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">JD match</CardTitle>
+      <Card className="fade-up" style={{ animationDelay: "80ms" }}>
+        <CardHeader className="border-b border-border/60 pb-4">
+          <CardTitle className="text-base font-semibold">JD match</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableHead>Requirement</TableHead>
                 <TableHead>Importance</TableHead>
                 <TableHead>Match</TableHead>
@@ -130,26 +155,29 @@ export default function CandidateDetailPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Claims &amp; evidence</CardTitle>
+      <Card className="fade-up" style={{ animationDelay: "160ms" }}>
+        <CardHeader className="border-b border-border/60 pb-4">
+          <CardTitle className="text-base font-semibold">Claims &amp; evidence</CardTitle>
           <p className="text-xs text-muted-foreground">
             Every claim below was quoted verbatim from the resume — uncitable claims were discarded at extraction.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
-          {claims.length === 0 && <p className="text-sm text-muted-foreground">No claims extracted.</p>}
+          {claims.length === 0 && <p className="py-4 text-center text-sm text-muted-foreground">No claims extracted.</p>}
           {claims.map((claim) => (
-            <div key={claim.id} className="rounded-lg border p-4">
+            <div
+              key={claim.id}
+              className="rounded-xl border border-border/70 bg-background/40 p-4 transition-colors duration-200 hover:border-border"
+            >
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="capitalize">
                   {claim.claim_type}
                 </Badge>
                 <p className="text-sm font-medium">{claim.claim_text}</p>
               </div>
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {(evidenceByClaim.get(claim.id) ?? []).map((e) => (
-                  <div key={e.id} className="flex items-center gap-2 rounded-md bg-muted px-2.5 py-1.5 text-xs">
+                  <div key={e.id} className="flex items-center gap-2 rounded-lg bg-muted/80 px-2.5 py-1.5 text-xs">
                     <VerdictBadge verdict={e.verdict} />
                     <span>{e.summary}</span>
                     {e.artifact_url && (

@@ -18,7 +18,12 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
+from app.llm.errors import LLMTransientError
+
 T = TypeVar("T", bound=BaseModel)
+
+# Status codes worth retrying: overload, rate limits, and transient server-side failures.
+_TRANSIENT_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 
 @dataclass
@@ -44,20 +49,38 @@ class GeminiProvider(LLMProvider):
         self._model = model
 
     async def generate_structured(self, *, system: str, user: str, schema: type[T]) -> StructuredResult[T]:
+        import httpx
         from google import genai
+        from google.genai import errors as genai_errors
         from google.genai import types
 
-        client = genai.Client(api_key=self._api_key)
-        response = await client.aio.models.generate_content(
-            model=self._model,
-            contents=user,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                response_mime_type="application/json",
-                response_schema=schema,
-                temperature=0.2,
+        # Our LLMClient owns the retry policy — cap the SDK at a single attempt per call
+        # (its internal tenacity loop would otherwise retry 503s for minutes inside what we
+        # think is one attempt) and bound each HTTP call so overload can't hang a request.
+        client = genai.Client(
+            api_key=self._api_key,
+            http_options=types.HttpOptions(
+                timeout=45_000,  # milliseconds
+                retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )
+        try:
+            response = await client.aio.models.generate_content(
+                model=self._model,
+                contents=user,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    response_mime_type="application/json",
+                    response_schema=schema,
+                    temperature=0.2,
+                ),
+            )
+        except genai_errors.APIError as exc:
+            if getattr(exc, "code", None) in _TRANSIENT_STATUS_CODES:
+                raise LLMTransientError(f"Gemini {exc.code} on {self._model}: {getattr(exc, 'message', exc)}") from exc
+            raise
+        except (httpx.TransportError, TimeoutError, ConnectionError) as exc:
+            raise LLMTransientError(f"Network error reaching Gemini ({self._model}): {exc}") from exc
         parsed: T = response.parsed if response.parsed is not None else schema.model_validate_json(response.text)
         usage = getattr(response, "usage_metadata", None)
         return StructuredResult(
@@ -76,18 +99,30 @@ class OpenAIProvider(LLMProvider):
         self._model = model
 
     async def generate_structured(self, *, system: str, user: str, schema: type[T]) -> StructuredResult[T]:
-        from openai import AsyncOpenAI
+        from openai import (
+            APIConnectionError,
+            APIStatusError,
+            APITimeoutError,
+            AsyncOpenAI,
+        )
 
         client = AsyncOpenAI(api_key=self._api_key)
-        completion = await client.beta.chat.completions.parse(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            response_format=schema,
-            temperature=0.2,
-        )
+        try:
+            completion = await client.beta.chat.completions.parse(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                response_format=schema,
+                temperature=0.2,
+            )
+        except APIStatusError as exc:
+            if exc.status_code in _TRANSIENT_STATUS_CODES:
+                raise LLMTransientError(f"OpenAI {exc.status_code} on {self._model}: {exc.message}") from exc
+            raise
+        except (APIConnectionError, APITimeoutError) as exc:
+            raise LLMTransientError(f"Network error reaching OpenAI ({self._model}): {exc}") from exc
         parsed = completion.choices[0].message.parsed
         if parsed is None:
             raise ValueError("OpenAI returned no parsed structured output")

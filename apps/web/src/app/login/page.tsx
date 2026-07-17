@@ -1,12 +1,14 @@
 "use client";
 
-import { FileSearch, Link2, MessageSquareText, ShieldCheck } from "lucide-react";
+import { FileSearch, Link2, Loader2, MessageSquareText, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InlineError } from "@/components/states";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 
 const VALUE_PROPS = [
@@ -50,6 +52,11 @@ function GoogleIcon() {
   );
 }
 
+/** Which action is in flight. Deliberately NOT cleared on success: the spinner must keep
+ * spinning until the router actually swaps the page (or the browser leaves for Google) —
+ * clearing it on the auth response alone leaves a dead, feedback-less gap. */
+type PendingAction = "google" | "password" | null;
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,42 +65,44 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingAction>(null);
 
   const next = searchParams.get("next") ?? "/jobs";
+  const busy = pending !== null;
 
   async function handleGoogle() {
     setError(null);
     setNotice(null);
-    setLoading(true);
+    setPending("google");
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
     });
     if (authError) {
-      setLoading(false);
+      setPending(null);
       setError(authError.message);
     }
-    // On success the browser navigates to Google; no further action here.
+    // On success the browser navigates to Google — keep the spinner until it does.
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setNotice(null);
-    setLoading(true);
+    setPending("password");
     const supabase = createClient();
 
     if (mode === "sign-up") {
       const { data, error: authError } = await supabase.auth.signUp({ email, password });
-      setLoading(false);
       if (authError) {
+        setPending(null);
         setError(authError.message);
         return;
       }
       // If email confirmation is enabled in Supabase, no session is returned yet.
       if (!data.session) {
+        setPending(null);
         setNotice("Account created. Check your email to confirm, then sign in. (Or disable email confirmation in Supabase to sign in instantly.)");
         setMode("sign-in");
         return;
@@ -104,78 +113,99 @@ function LoginForm() {
     }
 
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (authError) {
+      setPending(null);
       setError(authError.message);
       return;
     }
+    // Keep `pending` set: the button stays disabled with its spinner until /jobs mounts.
     router.push(next);
     router.refresh();
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Brand panel */}
-      <div className="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary-foreground/15">
+      <div className="brand-panel relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex">
+        <div className="brand-grid absolute inset-0" aria-hidden />
+        <div className="relative flex items-center gap-2.5">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
             <ShieldCheck className="size-5" aria-hidden />
           </span>
           <span className="text-xl font-semibold tracking-tight">Recruit</span>
         </div>
-        <div className="space-y-8">
-          <h1 className="max-w-md text-3xl leading-tight font-semibold tracking-tight">
-            Anyone can generate a perfect resume. Verify what candidates can actually defend.
+
+        <div className="relative max-w-lg space-y-10">
+          <h1 className="text-[2rem] leading-[1.2] font-semibold tracking-tight text-balance">
+            Anyone can generate a perfect resume.{" "}
+            <span className="text-white/70">Verify what candidates can actually defend.</span>
           </h1>
-          <ul className="max-w-md space-y-5">
-            {VALUE_PROPS.map(({ icon: Icon, title, body }) => (
-              <li key={title} className="flex gap-3">
-                <Icon className="mt-0.5 size-5 shrink-0 opacity-80" aria-hidden />
-                <div>
+          <ul className="space-y-6">
+            {VALUE_PROPS.map(({ icon: Icon, title, body }, i) => (
+              <li key={title} className="fade-up flex gap-4" style={{ animationDelay: `${150 + i * 120}ms` }}>
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] ring-1 ring-white/15">
+                  <Icon className="size-4.5" aria-hidden />
+                </span>
+                <div className="space-y-1">
                   <p className="font-medium">{title}</p>
-                  <p className="text-sm opacity-75">{body}</p>
+                  <p className="text-sm leading-relaxed text-white/60">{body}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-xs opacity-60">No scores. No rankings. Every verdict cited; every decision human.</p>
+
+        <p className="relative text-xs tracking-wide text-white/45">
+          No scores. No rankings. Every verdict cited; every decision human.
+        </p>
       </div>
 
       {/* Form panel */}
-      <div className="flex items-center justify-center p-6">
-        <div className="w-full max-w-sm space-y-6">
+      <div className="relative flex items-center justify-center p-6">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
+        <div className="fade-up w-full max-w-sm space-y-7">
           <div className="space-y-1 lg:hidden">
             <div className="flex items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <ShieldCheck className="size-4" aria-hidden />
+              <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-card">
+                <ShieldCheck className="size-4.5" aria-hidden />
               </span>
               <span className="text-lg font-semibold tracking-tight">Recruit</span>
             </div>
             <p className="text-sm text-muted-foreground">Evidence-first hiring verification.</p>
           </div>
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight">
+
+          <div className="space-y-1.5">
+            <h2 className="text-[1.6rem] font-semibold tracking-tight">
               {mode === "sign-in" ? "Welcome back" : "Create your account"}
             </h2>
             <p className="text-sm text-muted-foreground">
               {mode === "sign-in" ? "Sign in to your recruiter workspace." : "Set up a recruiter workspace in seconds."}
             </p>
           </div>
+
           {notice && (
             <Alert>
               <AlertDescription>{notice}</AlertDescription>
             </Alert>
           )}
 
-          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
-            <GoogleIcon />
-            Continue with Google
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={handleGoogle}
+            disabled={busy}
+          >
+            {pending === "google" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <GoogleIcon />}
+            {pending === "google" ? "Redirecting to Google..." : "Continue with Google"}
           </Button>
 
           <div className="flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">or</span>
+            <span className="text-xs text-muted-foreground">or continue with email</span>
             <span className="h-px flex-1 bg-border" />
           </div>
 
@@ -190,6 +220,8 @@ function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 placeholder="you@company.com"
+                disabled={busy}
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
@@ -202,21 +234,31 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                disabled={busy}
+                className="h-10"
               />
             </div>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait..." : mode === "sign-in" ? "Sign in" : "Sign up"}
+            {error && <InlineError message={error} />}
+            <Button type="submit" size="lg" className="h-10 w-full" disabled={busy}>
+              {pending === "password" && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {pending === "password"
+                ? mode === "sign-in"
+                  ? "Signing you in..."
+                  : "Creating your account..."
+                : mode === "sign-in"
+                  ? "Sign in"
+                  : "Sign up"}
             </Button>
           </form>
+
           <Button
             variant="link"
             className="w-full text-muted-foreground"
-            onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
+            disabled={busy}
+            onClick={() => {
+              setError(null);
+              setMode(mode === "sign-in" ? "sign-up" : "sign-in");
+            }}
           >
             {mode === "sign-in" ? "Need an account? Sign up" : "Already have an account? Sign in"}
           </Button>

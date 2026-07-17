@@ -91,6 +91,10 @@
   --verdict-unverified-bg: oklch(0.955 0.005 265);
   --verdict-contradicted: oklch(0.5 0.19 25);
   --verdict-contradicted-bg: oklch(0.96 0.02 25);
+  /* Layered depth — soft, fintech-grade. Cards sit slightly above the page, popovers above cards. */
+  --shadow-card: 0 1px 2px oklch(0.21 0.015 265 / 0.05), 0 1px 3px oklch(0.21 0.015 265 / 0.04);
+  --shadow-lift: 0 2px 4px oklch(0.21 0.015 265 / 0.05), 0 8px 24px -8px oklch(0.3 0.08 272 / 0.14);
+  --shadow-pop: 0 4px 8px oklch(0.21 0.015 265 / 0.06), 0 16px 48px -12px oklch(0.3 0.08 272 / 0.22);
 }
 
 .dark {
@@ -133,6 +137,9 @@
   --verdict-unverified-bg: oklch(0.3 0.01 265);
   --verdict-contradicted: oklch(0.75 0.15 25);
   --verdict-contradicted-bg: oklch(0.33 0.06 25);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.35), 0 1px 3px oklch(0 0 0 / 0.25);
+  --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.35), 0 8px 24px -8px oklch(0 0 0 / 0.5);
+  --shadow-pop: 0 4px 8px oklch(0 0 0 / 0.4), 0 16px 48px -12px oklch(0 0 0 / 0.6);
 }
 
 @theme inline {
@@ -144,6 +151,12 @@
   --color-verdict-unverified-bg: var(--verdict-unverified-bg);
   --color-verdict-contradicted: var(--verdict-contradicted);
   --color-verdict-contradicted-bg: var(--verdict-contradicted-bg);
+}
+
+@theme inline {
+  --shadow-card: var(--shadow-card);
+  --shadow-lift: var(--shadow-lift);
+  --shadow-pop: var(--shadow-pop);
 }
 
 @layer base {
@@ -162,5 +175,74 @@
   /* Counts, hashes, and timestamps line up. */
   table, .tabular {
     font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: oklch(0.44 0.16 272 / 0.18);
+  }
+  .dark ::selection {
+    background: oklch(0.72 0.12 272 / 0.3);
+  }
+  /* Thin, unobtrusive scrollbars (WebKit + Firefox). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.6 0.02 272 / 0.35) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: oklch(0.6 0.02 272 / 0.35);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  /* Ambient wash behind app screens: a faint indigo bloom at the top, nothing below the fold. */
+  .ambient {
+    background-image:
+      radial-gradient(60rem 24rem at 50% -8rem, oklch(0.44 0.16 272 / 0.055), transparent 70%);
+  }
+  .dark .ambient {
+    background-image:
+      radial-gradient(60rem 24rem at 50% -8rem, oklch(0.72 0.12 272 / 0.07), transparent 70%);
+  }
+  /* Deep-indigo brand surface (login hero, marketing edges). Layered glows, no images. */
+  .brand-panel {
+    background-color: oklch(0.29 0.11 272);
+    background-image:
+      radial-gradient(44rem 32rem at 110% -10%, oklch(0.52 0.17 292 / 0.45), transparent 62%),
+      radial-gradient(36rem 32rem at -15% 115%, oklch(0.42 0.17 258 / 0.55), transparent 62%),
+      linear-gradient(160deg, oklch(0.26 0.1 268), oklch(0.36 0.145 276));
+  }
+  .brand-grid {
+    background-image:
+      linear-gradient(oklch(1 0 0 / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 35%, black 25%, transparent 78%);
+  }
+  /* Entrance for page content — used with per-element animation-delay for stagger. */
+  .fade-up {
+    animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up {
+      animation: none;
+    }
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

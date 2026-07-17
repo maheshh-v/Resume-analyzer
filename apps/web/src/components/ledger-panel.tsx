@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Bot, Cog, FileText, Link2, ShieldAlert, ShieldCheck, User, UserRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/states";
 import { useApi } from "@/hooks/use-api";
 import type { LedgerActorType, LedgerEvent } from "@/lib/api-types";
+import { friendlyError } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
 /** The Evidence Ledger: every event in this candidate's verification, hash-chained so the
@@ -65,17 +67,24 @@ export function LedgerPanel({ candidateId }: { candidateId: string }) {
 
   if (ledgerQuery.isLoading) return <Skeleton className="h-64 rounded-xl" />;
   if (ledgerQuery.isError || !ledgerQuery.data) {
-    return <p className="text-sm text-destructive">Failed to load the evidence ledger.</p>;
+    return (
+      <ErrorState
+        title="Couldn't load the evidence ledger"
+        message={friendlyError(ledgerQuery.error)}
+        onRetry={() => ledgerQuery.refetch()}
+        retrying={ledgerQuery.isRefetching}
+      />
+    );
   }
 
   const events = ledgerQuery.data.events;
   const verification = verifyQuery.data;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+    <Card className="fade-up">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
         <div>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
             <Link2 className="size-4 text-primary" aria-hidden />
             Evidence Ledger
           </CardTitle>

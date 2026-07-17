@@ -7,18 +7,29 @@ keys aren't configured — this must work with zero external credentials for tes
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
+import logging
 import time
 from dataclasses import dataclass
 from typing import TypeVar
 
 from pydantic import BaseModel
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import Settings, get_settings
+from app.llm.errors import LLMTransientError, LLMUnavailableError
 from app.llm.provider import FakeProvider, GeminiProvider, LLMProvider, OpenAIProvider
 
 T = TypeVar("T", bound=BaseModel)
+
+logger = logging.getLogger(__name__)
+
+# Retry budget: 3 tries on the primary model (waits 1s, 2s between), then 2 tries on the
+# fallback model if one is configured. Worst case adds ~5s of waiting before a clean 503.
+_PRIMARY_ATTEMPTS = 3
+_FALLBACK_ATTEMPTS = 2
+_BACKOFF_BASE_SECONDS = 1.0
+_BACKOFF_MAX_SECONDS = 8.0
 
 # Rough per-1M-token USD pricing for the cost line in the README. Best-effort estimate,
 # not billing-accurate — update as providers change pricing.
@@ -54,6 +65,17 @@ def _build_provider(settings: Settings) -> LLMProvider:
     return GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
 
 
+def _build_fallback_provider(settings: Settings) -> LLMProvider | None:
+    """A second model to try when the primary is overloaded. Gemini-only for now: the
+    fallback shares the primary's API key, so it costs nothing to configure."""
+    if settings.llm_provider != "gemini":
+        return None
+    fallback = settings.gemini_fallback_model.strip()
+    if not fallback or fallback == settings.gemini_model:
+        return None
+    return GeminiProvider(api_key=settings.gemini_api_key, model=fallback)
+
+
 class LangfuseTracer:
     """Thin wrapper so the rest of the app never branches on 'is Langfuse configured'."""
 
@@ -85,24 +107,56 @@ class LLMClient:
     def __init__(self, provider: LLMProvider | None = None, settings: Settings | None = None):
         self._settings = settings or get_settings()
         self._provider = provider or _build_provider(self._settings)
+        # Only wire a fallback when we built the provider ourselves — an injected provider
+        # (tests, evals) must be the only thing that ever gets called.
+        self._fallback = None if provider is not None else _build_fallback_provider(self._settings)
         self._tracer = LangfuseTracer(self._settings)
 
     @property
     def provider_name(self) -> str:
         return self._provider.name
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=8),
-        retry=retry_if_exception_type((TimeoutError, ConnectionError)),
-        reraise=True,
-    )
     async def generate_structured(
         self, *, system: str, user: str, schema: type[T], prompt_version: str, trace_name: str
     ) -> LLMCallResult:
+        """Call the primary model with exponential-backoff retries on transient failures
+        (429/5xx/network), then the fallback model if configured. Non-transient errors
+        propagate immediately; exhausting every attempt raises LLMUnavailableError, which
+        the API layer turns into a clean 503."""
+        plan: list[tuple[LLMProvider, int]] = [(self._provider, _PRIMARY_ATTEMPTS)]
+        if self._fallback is not None:
+            plan.append((self._fallback, _FALLBACK_ATTEMPTS))
+
+        last_transient: LLMTransientError | None = None
+        for stage, (provider, max_attempts) in enumerate(plan):
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return await self._call_once(
+                        provider, system=system, user=user, schema=schema,
+                        prompt_version=prompt_version, trace_name=trace_name,
+                    )
+                except LLMTransientError as exc:
+                    last_transient = exc
+                    logger.warning("LLM transient failure (attempt %d/%d): %s", attempt, max_attempts, exc)
+                    if attempt < max_attempts:
+                        delay = min(_BACKOFF_BASE_SECONDS * 2 ** (attempt - 1), _BACKOFF_MAX_SECONDS)
+                        await asyncio.sleep(delay)
+                except Exception:
+                    if stage == 0:
+                        raise
+                    # The fallback model failing for a non-transient reason (e.g. this API key
+                    # can't access it) shouldn't mask the real story: the primary is overloaded.
+                    logger.exception("Fallback model failed non-transiently; reporting primary overload")
+                    break
+
+        raise LLMUnavailableError() from last_transient
+
+    async def _call_once(
+        self, provider: LLMProvider, *, system: str, user: str, schema: type[T], prompt_version: str, trace_name: str
+    ) -> LLMCallResult:
         start = time.perf_counter()
-        with self._tracer.span(trace_name, prompt_version=prompt_version, provider=self._provider.name):
-            result = await self._provider.generate_structured(system=system, user=user, schema=schema)
+        with self._tracer.span(trace_name, prompt_version=prompt_version, provider=provider.name):
+            result = await provider.generate_structured(system=system, user=user, schema=schema)
         latency_ms = int((time.perf_counter() - start) * 1000)
         cost = _estimate_cost_usd(result.model, result.input_tokens, result.output_tokens)
         return LLMCallResult(

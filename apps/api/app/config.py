@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     llm_provider: str = "gemini"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash"
+    # Tried (2 attempts) when the primary model is overloaded after retries. Set to "" to
+    # disable. Uses the same API key. The "-latest" alias always resolves to a model this
+    # key can access, unlike pinned versions which 404 for newer keys.
+    gemini_fallback_model: str = "gemini-flash-lite-latest"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
