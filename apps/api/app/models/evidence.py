@@ -14,7 +14,7 @@ class Evidence(Base, UUIDPk, TimestampMixin):
     __tablename__ = "evidence"
 
     claim_id: Mapped[str] = mapped_column(String(36), ForeignKey("claims.id"), index=True, nullable=False)
-    # source_type: consistency | github | interview
+    # source_type: consistency | github | interview | semantic_scholar | google_patents | package_ownership
     source_type: Mapped[str] = mapped_column(String(20), nullable=False)
     # verdict: verified | partial | unverified | contradicted
     verdict: Mapped[str] = mapped_column(String(20), nullable=False)
