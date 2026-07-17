@@ -2,14 +2,16 @@
 
 import { FileSearch, Link2, Loader2, MessageSquareText, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InlineError } from "@/components/states";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { API_BASE } from "@/lib/api-client";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/utils";
 
 const VALUE_PROPS = [
   {
@@ -67,8 +69,14 @@ function LoginForm() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingAction>(null);
 
-  const next = searchParams.get("next") ?? "/jobs";
+  const next = safeRedirectPath(searchParams.get("next"));
   const busy = pending !== null;
+
+  // Free-tier API hosts sleep after inactivity and take ~30-50s to wake. Ping while the
+  // user is still typing so their first real request lands on a warm server.
+  useEffect(() => {
+    void fetch(`${API_BASE}/health`).catch(() => {});
+  }, []);
 
   async function handleGoogle() {
     setError(null);
@@ -103,7 +111,7 @@ function LoginForm() {
       // If email confirmation is enabled in Supabase, no session is returned yet.
       if (!data.session) {
         setPending(null);
-        setNotice("Account created. Check your email to confirm, then sign in. (Or disable email confirmation in Supabase to sign in instantly.)");
+        setNotice("Account created — check your inbox for a confirmation link, then sign in.");
         setMode("sign-in");
         return;
       }

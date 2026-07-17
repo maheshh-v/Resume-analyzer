@@ -5,6 +5,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { InlineError } from "@/components/states";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/utils";
+
+function friendlyAuthError(message: string): string {
+  if (/code verifier|pkce/i.test(message)) {
+    return "This sign-in link was started in a different browser or has expired. Please sign in again — it will work this time.";
+  }
+  if (/expired|invalid/i.test(message)) {
+    return "This sign-in link has expired or was already used. Please sign in again.";
+  }
+  return message;
+}
 
 function Callback() {
   const router = useRouter();
@@ -12,29 +23,55 @@ function Callback() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const next = searchParams.get("next") ?? "/jobs";
+    const next = safeRedirectPath(searchParams.get("next"));
     const code = searchParams.get("code");
     const errDesc = searchParams.get("error_description");
-
-    if (errDesc) {
-      setError(errDesc);
-      return;
-    }
-    if (!code) {
-      // No code and no error — nothing to exchange; send them home.
-      router.replace("/login");
-      return;
-    }
-
     const supabase = createClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+    let cancelled = false;
+
+    async function completeSignIn() {
+      // The browser client auto-detects ?code= on creation and exchanges it itself,
+      // consuming the one-shot PKCE verifier. getSession() waits for that to settle, so
+      // if it already succeeded we must NOT exchange again — the second attempt would
+      // fail with "code verifier not found" even though the user is signed in.
+      const { data: first } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (first.session) {
+        router.replace(next);
+        router.refresh();
+        return;
+      }
+
+      if (errDesc) {
+        setError(friendlyAuthError(errDesc));
+        return;
+      }
+      if (!code) {
+        router.replace("/login");
+        return;
+      }
+
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (cancelled) return;
       if (exchangeError) {
-        setError(exchangeError.message);
+        const { data: raced } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (raced.session) {
+          router.replace(next);
+          router.refresh();
+          return;
+        }
+        setError(friendlyAuthError(exchangeError.message));
         return;
       }
       router.replace(next);
       router.refresh();
-    });
+    }
+
+    void completeSignIn();
+    return () => {
+      cancelled = true;
+    };
   }, [router, searchParams]);
 
   if (error) {
