@@ -1,0 +1,47 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Cloud Engineer at Pinnacle Cloud",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2020-03",
+        "asserted_end": null,
+        "asserted_org": "Pinnacle Cloud",
+        "quoted_source_text": "Cloud Engineer, Pinnacle Cloud (2020-03 to present)"
+      },
+      {
+        "claim_type": "credential",
+        "claim_text": "AWS Certified Solutions Architect – Professional",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "AWS Certified Solutions Architect – Professional (credential ID AWS-PRO-9981)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "AWS",
+        "normalized_skill": "aws",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "AWS"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Terraform",
+        "normalized_skill": "terraform",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Terraform"
+      }
+    ]
+  },
+  "evidence": []
+}

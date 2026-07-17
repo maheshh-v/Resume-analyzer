@@ -1,0 +1,66 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Senior Backend Engineer at Cloudhatch Systems",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2021-03",
+        "asserted_end": null,
+        "asserted_org": "Cloudhatch Systems",
+        "quoted_source_text": "Senior Backend Engineer, Cloudhatch Systems (2021-03 to present)"
+      },
+      {
+        "claim_type": "employment",
+        "claim_text": "Backend Engineer at Northwind Retail",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2018-06",
+        "asserted_end": "2021-02",
+        "asserted_org": "Northwind Retail",
+        "quoted_source_text": "Backend Engineer, Northwind Retail (2018-06 to 2021-02)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "6 years of Python",
+        "normalized_skill": "python",
+        "asserted_years": 6.0,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "6 years of Python"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "3 years of Go",
+        "normalized_skill": "go",
+        "asserted_years": 3.0,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "3 years of Go"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "PostgreSQL",
+        "normalized_skill": "postgresql",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "PostgreSQL"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "claim_key": "python",
+      "source_type": "github",
+      "verdict": "verified",
+      "artifact_url": "https://github.com/priya-nk/reconcile",
+      "artifact_snippet": "Python: 184320 bytes",
+      "summary": "'python' appears as a primary language in their repo 'reconcile'."
+    }
+  ]
+}

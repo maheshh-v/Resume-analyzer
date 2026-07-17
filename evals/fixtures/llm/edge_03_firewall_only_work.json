@@ -1,0 +1,47 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Software Engineer on a classified program",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2017-04",
+        "asserted_end": null,
+        "asserted_org": "Classified Program",
+        "quoted_source_text": "Software Engineer, Classified Program (2017-04 to present)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "C++",
+        "normalized_skill": "c++",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "C++"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Ada",
+        "normalized_skill": "ada",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Ada"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "real-time systems",
+        "normalized_skill": "real-time systems",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "real-time systems"
+      }
+    ]
+  },
+  "evidence": []
+}

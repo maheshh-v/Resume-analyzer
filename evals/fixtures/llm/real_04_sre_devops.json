@@ -1,0 +1,57 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "SRE at Beacon Cloud",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2020-07",
+        "asserted_end": null,
+        "asserted_org": "Beacon Cloud",
+        "quoted_source_text": "SRE, Beacon Cloud (2020-07 to present)"
+      },
+      {
+        "claim_type": "employment",
+        "claim_text": "Systems Engineer at Orbit Telecom",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2017-01",
+        "asserted_end": "2020-06",
+        "asserted_org": "Orbit Telecom",
+        "quoted_source_text": "Systems Engineer, Orbit Telecom (2017-01 to 2020-06)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Kubernetes",
+        "normalized_skill": "kubernetes",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Kubernetes"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Terraform",
+        "normalized_skill": "terraform",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Terraform"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "AWS",
+        "normalized_skill": "aws",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "AWS"
+      }
+    ]
+  },
+  "evidence": []
+}

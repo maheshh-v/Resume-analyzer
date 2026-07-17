@@ -1,0 +1,47 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Backend Engineer at Harbor Systems",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2022-02",
+        "asserted_end": null,
+        "asserted_org": "Harbor Systems",
+        "quoted_source_text": "Backend Engineer, Harbor Systems (2022-02 to present)"
+      },
+      {
+        "claim_type": "employment",
+        "claim_text": "Backend Engineer at Delta Freight",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2016-01",
+        "asserted_end": "2019-05",
+        "asserted_org": "Delta Freight",
+        "quoted_source_text": "Backend Engineer, Delta Freight (2016-01 to 2019-05)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Java",
+        "normalized_skill": "java",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Java"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Spring",
+        "normalized_skill": "spring",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Spring"
+      }
+    ]
+  },
+  "evidence": []
+}

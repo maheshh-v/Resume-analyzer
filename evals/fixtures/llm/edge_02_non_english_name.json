@@ -1,0 +1,47 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Systems Programmer at Reykjavík Data ehf",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2018-09",
+        "asserted_end": null,
+        "asserted_org": "Reykjavík Data ehf",
+        "quoted_source_text": "Systems Programmer, Reykjavík Data ehf (2018-09 to present)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "C",
+        "normalized_skill": "c",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "C and Rust"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Rust",
+        "normalized_skill": "rust",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Rust"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Linux",
+        "normalized_skill": "linux",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Linux"
+      }
+    ]
+  },
+  "evidence": []
+}
