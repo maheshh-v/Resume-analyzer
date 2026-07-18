@@ -6,7 +6,6 @@ import {
   FileSearch,
   Fingerprint,
   GitBranch,
-  Link2,
   Lock,
   MessageSquareText,
   ScrollText,
@@ -124,7 +123,7 @@ export default function RootPage() {
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
             Recruit reads a resume, cites every claim back to its source, cross-checks the evidence, and interviews
-            what's still unproven — then hands a human a decision they can defend months later.
+            what&apos;s still unproven — then hands a human a decision they can defend months later.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/login" className={buttonVariants({ size: "lg" })}>
@@ -210,8 +209,8 @@ export default function RootPage() {
       {/* Differentiators */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="max-w-2xl space-y-3">
-          <span className="text-sm font-semibold text-primary">Why it's trusted</span>
-          <h2 className="text-3xl font-semibold tracking-tight">Built so the evidence can't be faked</h2>
+          <span className="text-sm font-semibold text-primary">Why it&apos;s trusted</span>
+          <h2 className="text-3xl font-semibold tracking-tight">Built so the evidence can&apos;t be faked</h2>
           <p className="text-base leading-relaxed text-muted-foreground">
             The hard guarantees live in code, not in a prompt — which is exactly what makes the output defensible.
           </p>
