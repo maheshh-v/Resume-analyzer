@@ -1,7 +1,18 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Briefcase, Loader2, Plus, RotateCw, Sparkles, Users } from "lucide-react";
+import {
+  ArrowUpRight,
+  Briefcase,
+  FileSearch,
+  Loader2,
+  MessageSquareText,
+  Plus,
+  RotateCw,
+  ScrollText,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -24,6 +35,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, ErrorState, InlineError } from "@/components/states";
 import { useApi } from "@/hooks/use-api";
 import { friendlyError } from "@/lib/errors";
+
+const PIPELINE_STEPS = [
+  { icon: FileSearch, step: "01", title: "JD → requirements", body: "Structured, verifiable requirements you review in 30 seconds." },
+  { icon: Users, step: "02", title: "Add candidates", body: "Upload resumes, import a sheet, or share one public apply link." },
+  { icon: MessageSquareText, step: "03", title: "Evidence + interview", body: "Claims cited and cross-checked; adaptive questions probe the rest." },
+  { icon: ScrollText, step: "04", title: "Cited verdict", body: "A summary where every verdict links to evidence. You decide." },
+];
 
 export default function JobsPage() {
   const api = useApi();
@@ -65,7 +83,7 @@ export default function JobsPage() {
         render={
           <Button>
             <Plus className="size-4" aria-hidden />
-            New job
+            New role
           </Button>
         }
       />
@@ -77,7 +95,7 @@ export default function JobsPage() {
           }}
         >
           <DialogHeader>
-            <DialogTitle>Create a job</DialogTitle>
+            <DialogTitle>Open a new role</DialogTitle>
             <DialogDescription>
               We&apos;ll extract structured requirements from the JD. You&apos;ll review and edit them before anything else runs.
             </DialogDescription>
@@ -132,7 +150,7 @@ export default function JobsPage() {
           <DialogFooter>
             <Button type="submit" disabled={dialogLocked || !title.trim() || !jdRaw.trim()}>
               {dialogLocked && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {createJob.isSuccess ? "Opening job..." : createJob.isPending ? "Extracting requirements..." : "Create job"}
+              {createJob.isSuccess ? "Opening role..." : createJob.isPending ? "Extracting requirements..." : "Open role"}
             </Button>
           </DialogFooter>
         </form>
@@ -144,12 +162,27 @@ export default function JobsPage() {
     <div className="space-y-8">
       <div className="fade-up flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-[1.75rem] font-semibold tracking-tight">Jobs</h1>
+          <h1 className="text-[1.75rem] font-semibold tracking-tight">Roles you&apos;re hiring for</h1>
           <p className="text-sm text-muted-foreground">
-            Paste a job description to extract what&apos;s actually worth verifying.
+            Each role turns a job description into a reviewable list of verifiable requirements — then checks every
+            candidate against it, with evidence.
           </p>
         </div>
         {newJobDialog}
+      </div>
+
+      {/* How it works — keeps the page legible even with zero roles, and shows what the tool does. */}
+      <div className="fade-up grid gap-px overflow-hidden rounded-xl bg-border/60 ring-1 ring-border/60 sm:grid-cols-2 lg:grid-cols-4">
+        {PIPELINE_STEPS.map(({ icon: Icon, step, title, body }) => (
+          <div key={step} className="flex flex-col gap-1.5 bg-card p-4">
+            <div className="flex items-center gap-2 text-primary">
+              <Icon className="size-4" aria-hidden />
+              <span className="font-mono text-xs text-muted-foreground/60">{step}</span>
+            </div>
+            <p className="text-sm font-medium">{title}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
+          </div>
+        ))}
       </div>
 
       {jobsQuery.isLoading && (
@@ -176,12 +209,12 @@ export default function JobsPage() {
       {jobsQuery.data && jobsQuery.data.length === 0 && (
         <EmptyState
           icon={Briefcase}
-          title="No jobs yet"
-          body="Create your first job — paste the JD and we'll turn it into a reviewable list of verifiable requirements."
+          title="No roles yet"
+          body="Open your first role — paste the JD and we'll turn it into a reviewable list of verifiable requirements."
           action={
             <Button onClick={() => setOpen(true)}>
               <Plus className="size-4" aria-hidden />
-              Create your first job
+              Open your first role
             </Button>
           }
           className="fade-up"

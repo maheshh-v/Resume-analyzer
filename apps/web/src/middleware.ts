@@ -13,6 +13,9 @@ import { safeRedirectPath } from "@/lib/utils";
 const PUBLIC_PATH_PREFIXES = ["/login", "/auth", "/interview", "/apply", "/benchmarks", "/_next", "/favicon.ico"];
 
 function isPublicPath(pathname: string): boolean {
+  // The root is the public marketing landing page (it self-redirects authed users to /jobs).
+  // Exact match only — a "/" prefix would make every path public.
+  if (pathname === "/") return true;
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 

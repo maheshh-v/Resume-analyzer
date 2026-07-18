@@ -320,7 +320,7 @@ export default function JobDetailPage() {
   if (jobQuery.isError || !jobQuery.data) {
     return (
       <ErrorState
-        title="Couldn't load this job"
+        title="Couldn't load this role"
         message={friendlyError(jobQuery.error)}
         onRetry={() => jobQuery.refetch()}
         retrying={jobQuery.isRefetching}
@@ -338,7 +338,7 @@ export default function JobDetailPage() {
           className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" aria-hidden />
-          All jobs
+          All roles
         </Link>
         <h1 className="text-[1.75rem] font-semibold tracking-tight">{job.title}</h1>
         <p className="mt-2 line-clamp-3 max-w-3xl text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">{job.jd_raw}</p>
