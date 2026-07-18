@@ -27,23 +27,23 @@ async def _setup_candidate(client, fake_provider) -> tuple[str, str]:
             ]
         )
     )
-    job_resp = await client.post("/jobs", json={"title": "ML Engineer", "jd_raw": JD_TEXT})
+    job_resp = await client.post("/api/v1/jobs", json={"title": "ML Engineer", "jd_raw": JD_TEXT})
     job_id = job_resp.json()["id"]
-    candidate_resp = await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
+    candidate_resp = await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
     candidate_id = candidate_resp.json()["id"]
 
     fake_provider.responses.append(
         ExtractedClaims(claims=[ExtractedClaim(claim_type="skill", claim_text="TensorFlow", normalized_skill="TensorFlow", quoted_source_text="TensorFlow")])
     )
     pdf_bytes = _make_pdf_bytes("TensorFlow.")
-    await client.post(f"/candidates/{candidate_id}/resume", files={"file": ("r.pdf", io.BytesIO(pdf_bytes), "application/pdf")})
+    await client.post(f"/api/v1/candidates/{candidate_id}/resume", files={"file": ("r.pdf", io.BytesIO(pdf_bytes), "application/pdf")})
     return job_id, candidate_id
 
 
 @pytest.mark.asyncio
 async def test_hiring_summary_has_no_score_field(client, fake_provider):
     _, candidate_id = await _setup_candidate(client, fake_provider)
-    resp = await client.get(f"/candidates/{candidate_id}/report")
+    resp = await client.get(f"/api/v1/candidates/{candidate_id}/report")
     assert resp.status_code == 200
     body = resp.json()
 
@@ -57,7 +57,7 @@ async def test_hiring_summary_has_no_score_field(client, fake_provider):
 @pytest.mark.asyncio
 async def test_record_decision(client, fake_provider):
     _, candidate_id = await _setup_candidate(client, fake_provider)
-    resp = await client.post(f"/candidates/{candidate_id}/decision", json={"verdict": "advance", "rationale": "Strong TensorFlow evidence, Kubernetes unverified but not disqualifying."})
+    resp = await client.post(f"/api/v1/candidates/{candidate_id}/decision", json={"verdict": "advance", "rationale": "Strong TensorFlow evidence, Kubernetes unverified but not disqualifying."})
     assert resp.status_code == 201
     body = resp.json()
     assert body["verdict"] == "advance"
@@ -67,7 +67,7 @@ async def test_record_decision(client, fake_provider):
 @pytest.mark.asyncio
 async def test_record_decision_rejects_invalid_verdict(client, fake_provider):
     _, candidate_id = await _setup_candidate(client, fake_provider)
-    resp = await client.post(f"/candidates/{candidate_id}/decision", json={"verdict": "super_hire", "rationale": "x"})
+    resp = await client.post(f"/api/v1/candidates/{candidate_id}/decision", json={"verdict": "super_hire", "rationale": "x"})
     assert resp.status_code == 400
 
 
@@ -84,5 +84,5 @@ async def test_report_scoped_to_owner(client, fake_provider, db_session):
     await db_session.commit()
 
     app.dependency_overrides[get_current_user] = lambda: other_user
-    resp = await client.get(f"/candidates/{candidate_id}/report")
+    resp = await client.get(f"/api/v1/candidates/{candidate_id}/report")
     assert resp.status_code == 404

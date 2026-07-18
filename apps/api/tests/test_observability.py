@@ -258,9 +258,9 @@ async def test_resume_pipeline_records_extract_claims_cost(client, fake_provider
         )
     )
     job_id = (
-        await client.post("/jobs", json={"title": "ML", "jd_raw": "Senior ML.\n- 3+ years of TensorFlow"})
+        await client.post("/api/v1/jobs", json={"title": "ML", "jd_raw": "Senior ML.\n- 3+ years of TensorFlow"})
     ).json()["id"]
-    candidate_id = (await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane"})).json()["id"]
+    candidate_id = (await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane"})).json()["id"]
 
     fake_provider.responses.append(
         ExtractedClaims(
@@ -278,7 +278,7 @@ async def test_resume_pipeline_records_extract_claims_cost(client, fake_provider
     doc.close()
 
     await client.post(
-        f"/candidates/{candidate_id}/resume",
+        f"/api/v1/candidates/{candidate_id}/resume",
         files={"file": ("resume.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
     )
 

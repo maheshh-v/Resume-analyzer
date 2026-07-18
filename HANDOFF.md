@@ -108,9 +108,31 @@ python -m app.cli create_api_key --org "Acme Staffing" --quota 500
   to local disk and returns the storage path with `pdf_url: null`.
 - **Stripe is scaffold-only:** onboarding a customer (Stripe customer + meter) is manual; no events
   fire without `STRIPE_API_KEY` + a key's `stripe_customer_id`. No card collection anywhere.
-- **API versioning is intentionally split:** existing recruiter routes are unprefixed; the new
-  benchmarks / observability / public surfaces are under `/api/v1` per the spec.
 - **Rate limiter is in-memory, single-process** — a multi-instance deploy should move it to Redis.
+- **Legacy-redirect layer is temporary.** Old unprefixed recruiter paths 308-redirect to `/api/v1`
+  and log a warning on each hit (`app/main.py:LegacyPathRedirectMiddleware`). Remove it once no
+  legacy traffic shows up in logs.
+
+## API paths (all now under `/api/v1`)
+
+Every product route is versioned under `/api/v1`. `/health` and `/` stay unprefixed (infra health
+checks). Old bare paths **308-redirect** to their `/api/v1` equivalents (308 preserves method +
+body) — already-sent interview invite links are *frontend* routes (`/interview/{token}` on the web
+app) and are unaffected; only the API calls that page makes moved.
+
+| Old (redirected) | New |
+|---|---|
+| `/jobs`, `/jobs/{id}`, `/jobs/{id}/requirements`, `/jobs/{id}/candidates` | `/api/v1/jobs...` |
+| `/candidates/{id}`, `/candidates/{id}/resume` | `/api/v1/candidates...` |
+| `/candidates/{id}/interviews`, `/candidates/{id}/interviews/{iid}/transcript` | `/api/v1/candidates...` |
+| `/candidates/{id}/report`, `/candidates/{id}/decision` | `/api/v1/candidates...` |
+| `/candidates/{id}/ledger`, `/candidates/{id}/ledger/verify` | `/api/v1/candidates...` |
+| `/interview/{token}`, `/interview/{token}/questions/{qid}/answer` | `/api/v1/interview...` |
+| (already versioned) benchmarks / `llm-costs` / public | `/api/v1/...` (unchanged) |
+| `/health`, `/` | unchanged (never redirected) |
+
+The frontend prepends `/api/v1` once, in `apps/web/src/lib/api-client.ts` (`request()`); non-API
+fetches like `/health` bypass it.
 
 ## Test count: before vs after
 

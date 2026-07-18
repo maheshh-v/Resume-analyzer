@@ -89,7 +89,7 @@ async def test_non_transient_errors_propagate_immediately():
 
 async def test_api_returns_503_with_friendly_detail_when_llm_unavailable(client):
     set_default_client(LLMClient(provider=FlakyProvider(failures=99)))
-    response = await client.post("/jobs", json={"title": "Backend Engineer", "jd_raw": "Python. FastAPI."})
+    response = await client.post("/api/v1/jobs", json={"title": "Backend Engineer", "jd_raw": "Python. FastAPI."})
     assert response.status_code == 503
     detail = response.json()["detail"]
     assert "overloaded" in detail.lower()

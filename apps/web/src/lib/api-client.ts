@@ -16,6 +16,11 @@ import type {
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+// All product endpoints live under /api/v1 (see the backend router prefixing). Callers pass
+// bare paths like "/jobs"; request() prepends this once. Non-API fetches (e.g. /health) don't
+// go through request() and stay unprefixed.
+const API_PREFIX = "/api/v1";
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -33,7 +38,7 @@ async function request<T>(path: string, authToken: string | null, init?: Request
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    response = await fetch(`${API_BASE}${API_PREFIX}${path}`, { ...init, headers });
   } catch {
     // fetch() itself threw (server down, network drop, CORS-less 500). Never let the raw
     // "Failed to fetch" TypeError reach the UI — status 0 marks it as a connectivity error.
@@ -98,7 +103,7 @@ export function createApiClient(accessToken: string | null) {
       }),
 
     getLlmCosts: (candidateId: string) =>
-      request<LlmCostSummary>(`/api/v1/candidates/${candidateId}/llm-costs`, accessToken),
+      request<LlmCostSummary>(`/candidates/${candidateId}/llm-costs`, accessToken),
 
     getLedger: (candidateId: string) => request<Ledger>(`/candidates/${candidateId}/ledger`, accessToken),
 

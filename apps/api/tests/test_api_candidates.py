@@ -36,14 +36,14 @@ def _jd_response():
 
 async def _create_job(client, fake_provider) -> str:
     fake_provider.responses.append(_jd_response())
-    resp = await client.post("/jobs", json={"title": "ML Engineer", "jd_raw": JD_TEXT})
+    resp = await client.post("/api/v1/jobs", json={"title": "ML Engineer", "jd_raw": JD_TEXT})
     return resp.json()["id"]
 
 
 @pytest.mark.asyncio
 async def test_create_candidate_under_job(client, fake_provider):
     job_id = await _create_job(client, fake_provider)
-    resp = await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane Doe", "email": "jane@example.com"})
+    resp = await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane Doe", "email": "jane@example.com"})
     assert resp.status_code == 201
     body = resp.json()
     assert body["name"] == "Jane Doe"
@@ -53,7 +53,7 @@ async def test_create_candidate_under_job(client, fake_provider):
 @pytest.mark.asyncio
 async def test_resume_upload_extracts_claims_and_marks_ready(client, fake_provider):
     job_id = await _create_job(client, fake_provider)
-    candidate_resp = await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
+    candidate_resp = await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
     candidate_id = candidate_resp.json()["id"]
 
     resume_text = "Jane Doe\n4 years TensorFlow at Acme Inc, 2021-01 to present."
@@ -73,12 +73,12 @@ async def test_resume_upload_extracts_claims_and_marks_ready(client, fake_provid
 
     pdf_bytes = _make_pdf_bytes(resume_text)
     upload_resp = await client.post(
-        f"/candidates/{candidate_id}/resume",
+        f"/api/v1/candidates/{candidate_id}/resume",
         files={"file": ("resume.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
     )
     assert upload_resp.status_code == 200
 
-    detail_resp = await client.get(f"/candidates/{candidate_id}")
+    detail_resp = await client.get(f"/api/v1/candidates/{candidate_id}")
     assert detail_resp.status_code == 200
     body = detail_resp.json()
     assert body["candidate"]["status"] == "ready", body["candidate"]
@@ -90,11 +90,11 @@ async def test_resume_upload_extracts_claims_and_marks_ready(client, fake_provid
 @pytest.mark.asyncio
 async def test_resume_upload_rejects_non_pdf(client, fake_provider):
     job_id = await _create_job(client, fake_provider)
-    candidate_resp = await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
+    candidate_resp = await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
     candidate_id = candidate_resp.json()["id"]
 
     resp = await client.post(
-        f"/candidates/{candidate_id}/resume",
+        f"/api/v1/candidates/{candidate_id}/resume",
         files={"file": ("resume.txt", io.BytesIO(b"not a pdf"), "text/plain")},
     )
     assert resp.status_code == 400
@@ -103,7 +103,7 @@ async def test_resume_upload_rejects_non_pdf(client, fake_provider):
 @pytest.mark.asyncio
 async def test_resume_upload_with_overlapping_employment_writes_consistency_evidence(client, fake_provider):
     job_id = await _create_job(client, fake_provider)
-    candidate_resp = await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
+    candidate_resp = await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
     candidate_id = candidate_resp.json()["id"]
 
     fake_provider.responses.append(
@@ -131,11 +131,11 @@ async def test_resume_upload_with_overlapping_employment_writes_consistency_evid
 
     pdf_bytes = _make_pdf_bytes("Led ML at Acme. MS Stanford full-time.")
     await client.post(
-        f"/candidates/{candidate_id}/resume",
+        f"/api/v1/candidates/{candidate_id}/resume",
         files={"file": ("resume.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
     )
 
-    detail_resp = await client.get(f"/candidates/{candidate_id}")
+    detail_resp = await client.get(f"/api/v1/candidates/{candidate_id}")
     body = detail_resp.json()
     assert body["candidate"]["status"] == "ready"
     contradicted = [e for e in body["evidence"] if e["verdict"] == "contradicted"]
