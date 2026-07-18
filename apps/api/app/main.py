@@ -11,7 +11,17 @@ from app.config import get_settings
 from app.db.session import engine
 from app.llm.errors import LLMUnavailableError
 from app.models import Base
-from app.routers import benchmarks, candidates, health, interviews, jobs, ledger, observability, reports
+from app.routers import (
+    benchmarks,
+    candidates,
+    health,
+    interviews,
+    jobs,
+    ledger,
+    observability,
+    public,
+    reports,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(reports.router)
     app.include_router(ledger.router)
     app.include_router(observability.router)
+    app.include_router(public.router)
 
     return app
 
