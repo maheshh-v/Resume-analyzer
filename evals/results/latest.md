@@ -1,7 +1,7 @@
 # RecruitX pipeline benchmarks — golden_v1
 
-- **Generated:** 2026-07-17T18:59:19.069209+00:00
-- **Commit:** `e99a37b`
+- **Generated:** 2026-07-18T03:28:58.757090+00:00
+- **Commit:** `c5ebaa0`
 - **Provider:** `recorded-fixture` (offline recorded fixtures — see `evals/README.md` for what this does and does not prove)
 - **Dataset:** `evals/datasets/golden_v1.jsonl` — 15 cases (real: 5, planted_lie: 5, edge: 5)
 
