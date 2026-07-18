@@ -15,6 +15,7 @@ from app.routers import (
     benchmarks,
     candidates,
     health,
+    intake,
     interviews,
     jobs,
     ledger,
@@ -101,6 +102,7 @@ def create_app() -> FastAPI:
     app.include_router(benchmarks.router)
     app.include_router(jobs.router, prefix=_API_V1)
     app.include_router(candidates.router, prefix=_API_V1)
+    app.include_router(intake.router, prefix=_API_V1)
     app.include_router(interviews.router, prefix=_API_V1)
     app.include_router(reports.router, prefix=_API_V1)
     app.include_router(ledger.router, prefix=_API_V1)

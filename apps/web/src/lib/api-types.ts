@@ -20,6 +20,7 @@ export interface Job {
   title: string;
   jd_raw: string;
   requirements_status: "draft" | "reviewed";
+  apply_token: string | null;
   created_at: string;
   requirements: JobRequirement[];
 }
@@ -42,6 +43,28 @@ export interface Candidate {
   status: "pending" | "processing" | "ready" | "failed";
   status_detail: string | null;
   created_at: string;
+}
+
+// Mirrors app/schemas/intake.py — bulk intake responses.
+export interface BulkUploadResult {
+  created: Candidate[];
+  errors: string[];
+}
+
+export interface SheetImportResult {
+  created: Candidate[];
+  errors: string[];
+  fetching_count: number;
+}
+
+export interface ApplyLink {
+  apply_token: string;
+  apply_url_path: string;
+}
+
+export interface PublicJob {
+  job_title: string;
+  jd_preview: string;
 }
 
 export interface Claim {

@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ApplyLinkDialog, BulkUploadZone, ImportSheetDialog } from "@/components/intake";
 import { EmptyState, ErrorState, InlineError } from "@/components/states";
 import { useApi } from "@/hooks/use-api";
 import type { RequirementInput } from "@/lib/api-client";
@@ -346,14 +347,19 @@ export default function JobDetailPage() {
       <RequirementsEditor jobId={job.id} requirements={job.requirements} reviewed={job.requirements_status === "reviewed"} />
 
       <Card className="fade-up" style={{ animationDelay: "160ms" }}>
-        <CardHeader className="flex flex-row items-center justify-between border-b border-border/60 pb-4">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-4">
           <div className="space-y-0.5">
             <CardTitle className="text-base font-semibold">Candidates</CardTitle>
-            <p className="text-xs text-muted-foreground">Upload a resume and the evidence pipeline takes it from there.</p>
+            <p className="text-xs text-muted-foreground">Drop resumes, import a sheet, or share your apply link — the evidence pipeline takes it from there.</p>
           </div>
-          <AddCandidateDialog jobId={job.id} />
+          <div className="flex flex-wrap items-center gap-2">
+            <ImportSheetDialog jobId={job.id} />
+            <ApplyLinkDialog job={job} />
+            <AddCandidateDialog jobId={job.id} />
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <BulkUploadZone jobId={job.id} />
           {candidatesQuery.isLoading && (
             <div className="space-y-2 py-2">
               <Skeleton className="h-10 rounded-lg" />
@@ -373,8 +379,8 @@ export default function JobDetailPage() {
             <EmptyState
               icon={Users}
               title="No candidates yet"
-              body="Add one, upload their resume, and the evidence pipeline takes it from there."
-              className="border-0 bg-transparent py-10"
+              body="Drop resumes above, import a sheet from your ATS, or share the public apply link."
+              className="border-0 bg-transparent py-8"
             />
           )}
           {candidatesQuery.data && candidatesQuery.data.length > 0 && (

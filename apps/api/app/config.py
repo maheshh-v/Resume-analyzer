@@ -43,6 +43,10 @@ class Settings(BaseSettings):
 
     interview_token_ttl_hours: int = 72
 
+    # Applications/minute accepted per public apply link (see routers/intake.py). Shares the
+    # in-memory window store with the public API limiter; 0 disables the limit.
+    apply_rate_limit_per_min: int = 10
+
     # --- White-label public API + billing (Phase 4) ---
     # Per-key requests/minute for /api/v1/public. In-memory limiter; see public_api/rate_limit.py.
     public_api_rate_limit_per_min: int = 10

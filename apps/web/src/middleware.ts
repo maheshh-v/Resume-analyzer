@@ -8,7 +8,9 @@ import { safeRedirectPath } from "@/lib/utils";
 // bouncing it to /login drags the one-shot ?code= along and kills the PKCE exchange.
 // /benchmarks is a public, unauthenticated marketing/technical page — reproducible accuracy
 // numbers anyone can see without a recruiter session.
-const PUBLIC_PATH_PREFIXES = ["/login", "/auth", "/interview", "/benchmarks", "/_next", "/favicon.ico"];
+// /apply is the public application page — candidates reach it via a tokenized link the
+// recruiter shared, exactly like /interview.
+const PUBLIC_PATH_PREFIXES = ["/login", "/auth", "/interview", "/apply", "/benchmarks", "/_next", "/favicon.ico"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));

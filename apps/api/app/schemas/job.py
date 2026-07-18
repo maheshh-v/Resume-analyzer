@@ -43,6 +43,7 @@ class JobOut(BaseModel):
     title: str
     jd_raw: str
     requirements_status: str
+    apply_token: str | None = None
     created_at: datetime
     requirements: list[JobRequirementOut] = []
 

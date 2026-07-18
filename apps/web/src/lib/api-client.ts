@@ -1,4 +1,6 @@
 import type {
+  ApplyLink,
+  BulkUploadResult,
   Candidate,
   CandidateDetail,
   Decision,
@@ -12,6 +14,8 @@ import type {
   Ledger,
   LedgerVerification,
   LlmCostSummary,
+  PublicJob,
+  SheetImportResult,
 } from "./api-types";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -86,6 +90,28 @@ export function createApiClient(accessToken: string | null) {
       return request<Candidate>(`/candidates/${candidateId}/resume`, accessToken, { method: "POST", body: formData });
     },
 
+    bulkUploadResumes: (jobId: string, files: File[]) => {
+      const formData = new FormData();
+      for (const file of files) formData.append("files", file);
+      return request<BulkUploadResult>(`/jobs/${jobId}/candidates/bulk-upload`, accessToken, {
+        method: "POST",
+        body: formData,
+      });
+    },
+
+    importCandidateSheet: (jobId: string, file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return request<SheetImportResult>(`/jobs/${jobId}/candidates/import`, accessToken, {
+        method: "POST",
+        body: formData,
+      });
+    },
+
+    createApplyLink: (jobId: string) => request<ApplyLink>(`/jobs/${jobId}/apply-link`, accessToken, { method: "POST" }),
+
+    disableApplyLink: (jobId: string) => request<void>(`/jobs/${jobId}/apply-link`, accessToken, { method: "DELETE" }),
+
     getCandidateDetail: (candidateId: string) => request<CandidateDetail>(`/candidates/${candidateId}`, accessToken),
 
     createInterview: (candidateId: string) =>
@@ -111,6 +137,25 @@ export function createApiClient(accessToken: string | null) {
       request<LedgerVerification>(`/candidates/${candidateId}/ledger/verify`, accessToken),
   };
 }
+
+/** The public apply page is unauthenticated by design — a tokenized link a recruiter shares
+ * anywhere (job post, email, careers page), mirroring the interview portal pattern. */
+export const publicApplyApi = {
+  getJob: (applyToken: string) => request<PublicJob>(`/apply/${applyToken}`, null),
+
+  submitApplication: (
+    applyToken: string,
+    payload: { name: string; email: string; github_login?: string; linkedin_url?: string; file: File },
+  ) => {
+    const formData = new FormData();
+    formData.append("name", payload.name);
+    formData.append("email", payload.email);
+    if (payload.github_login) formData.append("github_login", payload.github_login);
+    if (payload.linkedin_url) formData.append("linkedin_url", payload.linkedin_url);
+    formData.append("file", payload.file);
+    return request<{ status: string }>(`/apply/${applyToken}`, null, { method: "POST", body: formData });
+  },
+};
 
 /** The candidate-facing interview portal is unauthenticated by design — a tokenized link,
  * not a Supabase session. See docs/ARCHITECTURE.md. */

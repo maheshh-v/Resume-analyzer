@@ -12,6 +12,9 @@ class Job(Base, UUIDPk, TimestampMixin):
     jd_raw: Mapped[str] = mapped_column(Text, nullable=False)
     # requirements_status: draft (auto-extracted, awaiting recruiter review) | reviewed
     requirements_status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False)
+    # Public apply-link token (see routers/intake.py). Null = no apply link; rotating the token
+    # invalidates every previously shared link.
+    apply_token: Mapped[str | None] = mapped_column(String(64), unique=True, index=True, nullable=True)
 
     requirements: Mapped[list["JobRequirement"]] = relationship(
         back_populates="job", cascade="all, delete-orphan", order_by="JobRequirement.ordinal"

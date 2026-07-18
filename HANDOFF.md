@@ -49,6 +49,31 @@ auto-verdict was introduced.
   import, no-op unless a key has `stripe_customer_id` and `STRIPE_API_KEY` is set).
 - Admin CLI: `python -m app.cli create_api_key --org "Acme Staffing" --quota 500`.
 
+### Bulk intake (post-Phase-4 addition)
+
+The one-dialog-per-candidate flow was a sales blocker — no company enters candidates one by
+one. Three intake surfaces now exist on the job page, all funneling into the exact same
+`process_candidate_resume` pipeline (same citation guardrail, same Evidence Ledger):
+
+- **Bulk PDF upload** — drag-drop up to 20 resumes at once
+  (`POST /api/v1/jobs/{id}/candidates/bulk-upload`). Candidate names are derived from
+  filenames (`Jane_Doe_Resume_2024.pdf` → "Jane Doe", `app/intake/naming.py`); a bad file is
+  reported per-file and never blocks the rest of the batch.
+- **CSV/XLSX sheet import** — `POST /api/v1/jobs/{id}/candidates/import`. Forgiving headers
+  (`name` required; `email`, `github`, `linkedin`, `resume_url` optional — "GitHub username"
+  and "github_login" both work; see `app/intake/sheet.py`). Rows with a `resume_url` get the
+  PDF fetched in the background (SSRF-guarded: http(s) only, private hosts blocked per redirect
+  hop, 10MB cap, %PDF magic check — `app/intake/fetch.py`) and verified immediately; a dead URL
+  marks only that candidate `failed`. Row errors come back numbered as the user sees them in
+  their spreadsheet. Frontend dialog includes a downloadable CSV template. New dep: `openpyxl`.
+- **Public apply link (the differentiator)** — `POST /api/v1/jobs/{id}/apply-link` mints a
+  tokenized public URL (`/apply/{token}`, same pattern as the interview portal); candidates
+  submit their own details + resume and verification + ledger start the instant they submit
+  (`candidate_applied` ledger event, actor `candidate`). Zero recruiter data entry, and every
+  application arrives pre-verified. Rotate/disable invalidates shared links; per-token rate
+  limit (`APPLY_RATE_LIMIT_PER_MIN`, default 10/min); the applicant response deliberately
+  carries no candidate id. Migration `0005_apply_token` adds `jobs.apply_token`.
+
 ## New env vars
 
 All optional; sensible defaults keep everything working with zero config.
@@ -65,6 +90,7 @@ All optional; sensible defaults keep everything working with zero config.
 | `SUPABASE_REPORTS_BUCKET` | `recruitx-reports` | Private bucket for white-label branded PDFs |
 | `SUPABASE_SERVICE_ROLE_KEY` | unset | Admin key, **server-side only** — put a real value in `.env` only, never `.env.example`/logs/commits |
 | `USE_LOCAL_STORAGE` | `false` | Force local-disk storage (dev/testing without Supabase creds) |
+| `APPLY_RATE_LIMIT_PER_MIN` | `10` | Applications/minute accepted per public apply link (0 disables) |
 
 ## New DB migrations
 
@@ -76,6 +102,7 @@ alembic upgrade head
 
 - `0003_llm_call_log` — per-call cost/latency telemetry (metadata only).
 - `0004_public_api` — `api_keys` + `public_reports`.
+- `0005_apply_token` — `jobs.apply_token` for the public apply link.
 
 ## Run the eval harness locally
 

@@ -29,6 +29,12 @@ def _allow(key_id: str, limit: int) -> bool:
     return True
 
 
+def allow_hit(key: str, limit: int) -> bool:
+    """Generic seam for other public surfaces (e.g. the apply link) to share the window store.
+    Callers must namespace their keys ("apply:<token>") so they can't collide with api-key ids."""
+    return _allow(key, limit)
+
+
 def reset_rate_limits() -> None:
     """Test/ops seam — clear the in-memory window state."""
     _hits.clear()
