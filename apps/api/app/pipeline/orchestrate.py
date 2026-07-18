@@ -16,11 +16,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.config import get_settings
 from app.ledger import append_event
 from app.llm.client import LLMClient, get_llm_client
-from app.observability.context import llm_call_context
 from app.models.candidate import Candidate
 from app.models.claim import Claim
 from app.models.document import Document
 from app.models.evidence import Evidence
+from app.observability.context import llm_call_context
 from app.pipeline.evidence.consistency import ConsistencyClaim, run_consistency_checks
 from app.pipeline.evidence.github import gather_github_evidence
 from app.pipeline.evidence.google_patents import gather_patent_evidence

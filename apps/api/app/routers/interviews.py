@@ -21,11 +21,11 @@ from app.db.session import get_db
 from app.ledger import append_event, sha256_text
 from app.llm.client import LLMClient, get_llm_client
 from app.models.candidate import Candidate
-from app.observability.context import llm_call_context
 from app.models.evidence import Evidence
 from app.models.interview import Interview, InterviewAnswer, InterviewQuestion
 from app.models.job import Job
 from app.models.user import User
+from app.observability.context import llm_call_context
 from app.pipeline.interview.evaluate import compute_behavioral_flags, evaluate_answer, normalize_answer_text
 from app.pipeline.interview.generate import generate_base_question, generate_followup_question
 from app.pipeline.interview.state_machine import AskedQuestion, ClaimTarget, decide_next_action
