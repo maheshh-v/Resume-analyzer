@@ -5,13 +5,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, RedirectResponse
 
 from app.config import get_settings
 from app.db.session import engine
 from app.llm.errors import LLMUnavailableError
 from app.models import Base
-from app.routers import candidates, health, interviews, jobs, ledger, reports
+from app.routers import (
+    benchmarks,
+    candidates,
+    health,
+    interviews,
+    jobs,
+    ledger,
+    observability,
+    public,
+    reports,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +34,32 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     yield
+
+
+# Top-level segments of the pre-versioning recruiter API. Kept for backward compatibility via a
+# 308 redirect to their /api/v1 equivalents (see LegacyPathRedirectMiddleware). `/health` and `/`
+# are intentionally NOT here — infra health checks must keep hitting the bare paths.
+_LEGACY_PREFIXES = ("/jobs", "/candidates", "/interview")
+_API_V1 = "/api/v1"
+
+
+class LegacyPathRedirectMiddleware(BaseHTTPMiddleware):
+    """Redirect old unprefixed recruiter routes to their /api/v1 equivalents with a 308 (which
+    preserves method + body, unlike a 302). Temporary: logs a warning each time so we can see who
+    still hits legacy paths and remove this once callers migrate."""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if any(path == p or path.startswith(p + "/") for p in _LEGACY_PREFIXES):
+            target = request.url.replace(path=_API_V1 + path)
+            logger.warning(
+                "Legacy API path hit: %s %s -> 308 %s (client should migrate to /api/v1)",
+                request.method,
+                path,
+                target.path,
+            )
+            return RedirectResponse(str(target), status_code=308)
+        return await call_next(request)
 
 
 class LLMErrorMiddleware(BaseHTTPMiddleware):
@@ -46,9 +82,11 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="Recruit — Evidence-First Hiring Verification", lifespan=lifespan)
 
-    # Order matters: the LAST-added middleware is OUTERMOST, so add LLM error handling
-    # first and CORS second — CORS must wrap every response, including our 503s.
+    # Order matters: the LAST-added middleware is OUTERMOST, so add LLM error handling first,
+    # the legacy redirect second, and CORS last — CORS must wrap every response (including 503s
+    # and the 308 redirects, so browsers can follow them cross-origin).
     app.add_middleware(LLMErrorMiddleware)
+    app.add_middleware(LegacyPathRedirectMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -57,12 +95,17 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Infra endpoints stay unprefixed. Everything the product exposes lives under /api/v1: the
+    # recruiter routers get the prefix here; benchmarks/observability/public already bake it in.
     app.include_router(health.router)
-    app.include_router(jobs.router)
-    app.include_router(candidates.router)
-    app.include_router(interviews.router)
-    app.include_router(reports.router)
-    app.include_router(ledger.router)
+    app.include_router(benchmarks.router)
+    app.include_router(jobs.router, prefix=_API_V1)
+    app.include_router(candidates.router, prefix=_API_V1)
+    app.include_router(interviews.router, prefix=_API_V1)
+    app.include_router(reports.router, prefix=_API_V1)
+    app.include_router(ledger.router, prefix=_API_V1)
+    app.include_router(observability.router)
+    app.include_router(public.router)
 
     return app
 

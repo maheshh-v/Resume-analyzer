@@ -1,0 +1,56 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Full-Stack Engineer at Mapleworks",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2019-11",
+        "asserted_end": null,
+        "asserted_org": "Mapleworks",
+        "quoted_source_text": "Full-Stack Engineer, Mapleworks (2019-11 to present)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Node.js",
+        "normalized_skill": "node.js",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Node.js"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "React",
+        "normalized_skill": "react",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "React"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "PostgreSQL",
+        "normalized_skill": "postgresql",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "PostgreSQL"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "claim_key": "node.js",
+      "source_type": "github",
+      "verdict": "verified",
+      "artifact_url": "https://github.com/tobrien-codes/logistics",
+      "artifact_snippet": "JavaScript: 251004 bytes",
+      "summary": "'node.js' project surfaces in their repo 'logistics'."
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Freelance Developer",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2020-01",
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Freelance Developer (2020-01 to present)"
+      },
+      {
+        "claim_type": "project",
+        "claim_text": "budgeting app in Flutter and Dart",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "built a personal budgeting app in Flutter and Dart"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Flutter",
+        "normalized_skill": "flutter",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Flutter"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Dart",
+        "normalized_skill": "dart",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Dart"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Kotlin",
+        "normalized_skill": "kotlin",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "5 years of Kotlin on Android"
+      }
+    ]
+  },
+  "evidence": []
+}

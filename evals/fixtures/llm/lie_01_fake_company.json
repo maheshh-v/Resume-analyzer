@@ -1,0 +1,47 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Senior Engineer at Vertex Quantum Labs",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2021-05",
+        "asserted_end": null,
+        "asserted_org": "Vertex Quantum Labs",
+        "quoted_source_text": "Senior Engineer, Vertex Quantum Labs (2021-05 to present)"
+      },
+      {
+        "claim_type": "employment",
+        "claim_text": "Software Engineer at Real Systems Inc",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2018-02",
+        "asserted_end": "2021-04",
+        "asserted_org": "Real Systems Inc",
+        "quoted_source_text": "Software Engineer, Real Systems Inc (2018-02 to 2021-04)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Python",
+        "normalized_skill": "python",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Python"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Rust",
+        "normalized_skill": "rust",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "Rust"
+      }
+    ]
+  },
+  "evidence": []
+}

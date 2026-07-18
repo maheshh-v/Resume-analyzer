@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorState, InlineError } from "@/components/states";
+import { TracePanel } from "@/components/trace-panel";
 import { ImportanceBadge, MatchBadge, VerdictBadge } from "@/components/verdict-badge";
 import { useApi } from "@/hooks/use-api";
 import type { Evidence } from "@/lib/api-types";
@@ -203,6 +204,8 @@ export default function CandidateDetailPage() {
           ))}
         </CardContent>
       </Card>
+
+      <TracePanel candidateId={candidateId} />
     </div>
   );
 }

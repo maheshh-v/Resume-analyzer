@@ -20,8 +20,12 @@ from app.models.candidate import Candidate
 from app.models.claim import Claim
 from app.models.document import Document
 from app.models.evidence import Evidence
+from app.observability.context import llm_call_context
 from app.pipeline.evidence.consistency import ConsistencyClaim, run_consistency_checks
 from app.pipeline.evidence.github import gather_github_evidence
+from app.pipeline.evidence.google_patents import gather_patent_evidence
+from app.pipeline.evidence.package_ownership import gather_package_ownership_evidence
+from app.pipeline.evidence.semantic_scholar import gather_semantic_scholar_evidence
 from app.pipeline.extract_claims import extract_claims
 from app.pipeline.text_extraction import extract_text_from_pdf
 
@@ -80,7 +84,8 @@ async def process_candidate_resume(
                 payload={"filename": filename, "file_sha256": content_hash, "size_bytes": len(file_bytes)},
             )
 
-            claim_result = await extract_claims(extracted.full_text, llm)
+            with llm_call_context(candidate_id=candidate_id, job_id=candidate.job_id):
+                claim_result = await extract_claims(extracted.full_text, llm)
             claim_rows: list[Claim] = []
             for draft in claim_result.claims:
                 claim = Claim(
@@ -187,6 +192,8 @@ async def process_candidate_resume(
                     payload={"github_login": candidate.github_login, "evidence_count": len(github_drafts)},
                 )
 
+            await _gather_connector_evidence(db, candidate=candidate, claim_rows=claim_rows)
+
             candidate.status = "ready"
             candidate.status_detail = (
                 f"{len(claim_rows)} claims extracted, {claim_result.discarded_uncitable} discarded (uncitable)"
@@ -198,3 +205,69 @@ async def process_candidate_resume(
             candidate.status_detail = str(exc)[:500]
             await db.commit()
             logger.exception("process_candidate_resume failed for candidate %s", candidate_id)
+
+    # Flush cost telemetry now that all pipeline commits are done — no lock contention, and the
+    # per-candidate cost endpoint is populated the moment processing finishes.
+    await llm.drain_cost_logs()
+
+
+async def _gather_connector_evidence(db, *, candidate: Candidate, claim_rows: list[Claim]) -> None:
+    """Opportunistic external evidence — Semantic Scholar, Google Patents, package ownership.
+
+    Each source is behind its own config flag (all off by default) and each has ALREADY passed the
+    URL+substring citation guardrail inside the connector, so anything returned here is safe to
+    write. Like the GitHub pass, this never fails the pipeline and absence writes nothing.
+    """
+    settings = get_settings()
+    if not (
+        settings.enable_semantic_scholar
+        or settings.enable_google_patents
+        or settings.enable_package_ownership
+    ):
+        return
+
+    research_claim = next(
+        (c for c in claim_rows if c.claim_type in ("project", "education", "credential")), None
+    )
+    package_claim = next((c for c in claim_rows if c.claim_type in ("project", "skill")), None)
+
+    drafts = []
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            if settings.enable_semantic_scholar and research_claim and candidate.name:
+                drafts += await gather_semantic_scholar_evidence(
+                    author_name=candidate.name, claim_id=research_claim.id, client=client
+                )
+            if settings.enable_google_patents and research_claim and candidate.name:
+                drafts += await gather_patent_evidence(
+                    inventor_name=candidate.name, claim_id=research_claim.id, client=client
+                )
+            if settings.enable_package_ownership and package_claim and candidate.github_login:
+                drafts += await gather_package_ownership_evidence(
+                    claim_id=package_claim.id, client=client, npm_handle=candidate.github_login
+                )
+    except Exception:  # external evidence is opportunistic — never fail the pipeline for it
+        logger.exception("Connector evidence gathering failed for candidate %s", candidate.id)
+        return
+
+    for d in drafts:
+        db.add(
+            Evidence(
+                claim_id=d.claim_id,
+                source_type=d.source_type,
+                verdict=d.verdict,
+                summary=d.summary,
+                artifact_url=d.artifact_url,
+                artifact_snippet=d.artifact_snippet,
+                model=None,
+                prompt_version=f"{d.source_type}.v1",
+            )
+        )
+    if drafts:
+        await append_event(
+            db,
+            candidate_id=candidate.id,
+            event_type="connector_evidence",
+            actor_type="system",
+            payload={"evidence_count": len(drafts), "sources": sorted({d.source_type for d in drafts})},
+        )

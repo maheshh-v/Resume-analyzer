@@ -94,19 +94,19 @@ async def test_empty_chain_verifies_ok(db_session):
 @pytest.mark.asyncio
 async def test_pipeline_and_interview_emit_full_trail(client, fake_provider):
     candidate_id = await _setup_candidate_with_two_unverified_must_haves(client, fake_provider)
-    token = (await client.post(f"/candidates/{candidate_id}/interviews")).json()["token"]
+    token = (await client.post(f"/api/v1/candidates/{candidate_id}/interviews")).json()["token"]
 
     fake_provider.responses.append(_question("Tell me about a TensorFlow retracing bug you hit.", ["retracing"]))
-    state = (await client.get(f"/interview/{token}")).json()
+    state = (await client.get(f"/api/v1/interview/{token}")).json()
     q1_id = state["current_question"]["id"]
 
     fake_provider.responses.append(_evaluation("strong", "precise"))
     fake_provider.responses.append(_question("Walk me through a k8s rollout you owned.", ["rollout"]))
-    await client.post(f"/interview/{token}/questions/{q1_id}/answer", json={"answer_text": "We hit input-shape retracing..."})
+    await client.post(f"/api/v1/interview/{token}/questions/{q1_id}/answer", json={"answer_text": "We hit input-shape retracing..."})
 
-    await client.post(f"/candidates/{candidate_id}/decision", json={"verdict": "advance", "rationale": "Strong on TF."})
+    await client.post(f"/api/v1/candidates/{candidate_id}/decision", json={"verdict": "advance", "rationale": "Strong on TF."})
 
-    ledger = (await client.get(f"/candidates/{candidate_id}/ledger")).json()
+    ledger = (await client.get(f"/api/v1/candidates/{candidate_id}/ledger")).json()
     event_types = [e["event_type"] for e in ledger["events"]]
     assert event_types[0] == "candidate_created"
     for expected in ("resume_ingested", "claims_extracted", "consistency_checked", "interview_created", "question_asked", "answer_recorded", "decision_recorded"):
@@ -114,7 +114,7 @@ async def test_pipeline_and_interview_emit_full_trail(client, fake_provider):
     # seq is dense and ordered
     assert [e["seq"] for e in ledger["events"]] == list(range(len(ledger["events"])))
 
-    verification = (await client.get(f"/candidates/{candidate_id}/ledger/verify")).json()
+    verification = (await client.get(f"/api/v1/candidates/{candidate_id}/ledger/verify")).json()
     assert verification["ok"] is True
     assert verification["event_count"] == len(ledger["events"])
     assert verification["content_mismatches"] == []
@@ -123,15 +123,15 @@ async def test_pipeline_and_interview_emit_full_trail(client, fake_provider):
 @pytest.mark.asyncio
 async def test_edited_answer_is_caught_by_content_attestation(client, fake_provider, db_session):
     candidate_id = await _setup_candidate_with_two_unverified_must_haves(client, fake_provider)
-    token = (await client.post(f"/candidates/{candidate_id}/interviews")).json()["token"]
+    token = (await client.post(f"/api/v1/candidates/{candidate_id}/interviews")).json()["token"]
 
     fake_provider.responses.append(_question("Tell me about a TensorFlow retracing bug you hit.", ["retracing"]))
-    state = (await client.get(f"/interview/{token}")).json()
+    state = (await client.get(f"/api/v1/interview/{token}")).json()
     q1_id = state["current_question"]["id"]
 
     fake_provider.responses.append(_evaluation("weak", "generic"))
     fake_provider.responses.append(_question("Specifically what triggered it?", ["retracing"]))
-    await client.post(f"/interview/{token}/questions/{q1_id}/answer", json={"answer_text": "TensorFlow is a framework."})
+    await client.post(f"/api/v1/interview/{token}/questions/{q1_id}/answer", json={"answer_text": "TensorFlow is a framework."})
 
     # Someone quietly "improves" the recorded answer after the fact.
     result = await db_session.execute(select(InterviewAnswer))
@@ -141,7 +141,7 @@ async def test_edited_answer_is_caught_by_content_attestation(client, fake_provi
     await db_session.commit()
     assert sha256_text(answer.answer_text) != original_hash
 
-    verification = (await client.get(f"/candidates/{candidate_id}/ledger/verify")).json()
+    verification = (await client.get(f"/api/v1/candidates/{candidate_id}/ledger/verify")).json()
     assert verification["ok"] is False
     assert verification["first_broken_seq"] is None  # chain itself intact — the *content* was altered
     assert any(m["event_type"] == "answer_recorded" for m in verification["content_mismatches"])
@@ -164,5 +164,5 @@ async def test_ledger_requires_ownership(client, fake_provider, db_session):
         return intruder
 
     app.dependency_overrides[get_current_user] = _override
-    resp = await client.get(f"/candidates/{candidate_id}/ledger")
+    resp = await client.get(f"/api/v1/candidates/{candidate_id}/ledger")
     assert resp.status_code == 404

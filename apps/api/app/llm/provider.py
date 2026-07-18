@@ -36,6 +36,7 @@ class StructuredResult(Generic[T]):
 
 class LLMProvider(ABC):
     name: str
+    model: str = "unknown"  # the concrete model id, exposed for tracing/cost tags
 
     @abstractmethod
     async def generate_structured(self, *, system: str, user: str, schema: type[T]) -> StructuredResult[T]: ...
@@ -47,6 +48,7 @@ class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str, model: str):
         self._api_key = api_key
         self._model = model
+        self.model = model
 
     async def generate_structured(self, *, system: str, user: str, schema: type[T]) -> StructuredResult[T]:
         import httpx
@@ -97,6 +99,7 @@ class OpenAIProvider(LLMProvider):
     def __init__(self, api_key: str, model: str):
         self._api_key = api_key
         self._model = model
+        self.model = model
 
     async def generate_structured(self, *, system: str, user: str, schema: type[T]) -> StructuredResult[T]:
         from openai import (
@@ -142,6 +145,7 @@ class FakeProvider(LLMProvider):
     unexpected extra calls rather than silently returning garbage."""
 
     name: str = "fake"
+    model: str = "fake-model"
     responses: list[BaseModel | dict] = field(default_factory=list)
     calls: list[dict] = field(default_factory=list)
 

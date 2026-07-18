@@ -1,0 +1,66 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Frontend Engineer at Lumen Health",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2020-01",
+        "asserted_end": null,
+        "asserted_org": "Lumen Health",
+        "quoted_source_text": "Frontend Engineer, Lumen Health (2020-01 to present)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "5 years of React",
+        "normalized_skill": "react",
+        "asserted_years": 5.0,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "5 years of React"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "TypeScript",
+        "normalized_skill": "typescript",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "TypeScript"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "accessibility (WCAG 2.1)",
+        "normalized_skill": "accessibility",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "accessibility (WCAG 2.1)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "Jest testing",
+        "normalized_skill": "jest",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "cut load time by 40%"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "claim_key": "react",
+      "source_type": "github",
+      "verdict": "verified",
+      "artifact_url": "https://github.com/marcusbell-dev/portal",
+      "artifact_snippet": "TypeScript: 402113 bytes",
+      "summary": "'react' project surfaces in their repo 'portal'."
+    }
+  ]
+}

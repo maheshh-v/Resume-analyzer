@@ -14,3 +14,4 @@ google-genai>=0.3.0
 langfuse>=2.53.0
 python-dotenv>=1.0.1
 tenacity>=9.0.0
+stripe>=9.0.0,<12.0.0

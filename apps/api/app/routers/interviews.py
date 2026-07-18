@@ -25,6 +25,7 @@ from app.models.evidence import Evidence
 from app.models.interview import Interview, InterviewAnswer, InterviewQuestion
 from app.models.job import Job
 from app.models.user import User
+from app.observability.context import llm_call_context
 from app.pipeline.interview.evaluate import compute_behavioral_flags, evaluate_answer, normalize_answer_text
 from app.pipeline.interview.generate import generate_base_question, generate_followup_question
 from app.pipeline.interview.state_machine import AskedQuestion, ClaimTarget, decide_next_action
@@ -226,18 +227,19 @@ async def get_interview_state(token: str, db: AsyncSession = Depends(get_db)) ->
     # ask_base or ask_followup: generate the next question now (lazy — only when the
     # candidate actually reaches this point, so an abandoned interview costs nothing).
     llm = get_llm_client()
-    if action.kind == "ask_base":
-        generated = await generate_base_question(claim=action.claim, artifact_context=None, llm=llm)
-    else:
-        prev_question = next(
-            q for q in interview.questions if q.targets_claim_id == action.claim.claim_id and q.depth == action.previous_question.depth
-        )
-        generated = await generate_followup_question(
-            original_question_text=prev_question.question_text,
-            answer_text=prev_question.answer.answer_text if prev_question.answer else "",
-            rubric_must_mention=prev_question.rubric.get("must_mention", []),
-            llm=llm,
-        )
+    with llm_call_context(candidate_id=interview.candidate_id, job_id=interview.job_id):
+        if action.kind == "ask_base":
+            generated = await generate_base_question(claim=action.claim, artifact_context=None, llm=llm)
+        else:
+            prev_question = next(
+                q for q in interview.questions if q.targets_claim_id == action.claim.claim_id and q.depth == action.previous_question.depth
+            )
+            generated = await generate_followup_question(
+                original_question_text=prev_question.question_text,
+                answer_text=prev_question.answer.answer_text if prev_question.answer else "",
+                rubric_must_mention=prev_question.rubric.get("must_mention", []),
+                llm=llm,
+            )
 
     if interview.status == "pending":
         interview.status = "in_progress"
@@ -298,12 +300,13 @@ async def submit_answer(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This question was already answered")
 
     answer_text = normalize_answer_text(payload.answer_text)
-    evaluation = await evaluate_answer(
-        question_text=question.question_text,
-        rubric_must_mention=question.rubric.get("must_mention", []),
-        answer_text=answer_text,
-        llm=llm,
-    )
+    with llm_call_context(candidate_id=interview.candidate_id, job_id=interview.job_id):
+        evaluation = await evaluate_answer(
+            question_text=question.question_text,
+            rubric_must_mention=question.rubric.get("must_mention", []),
+            answer_text=answer_text,
+            llm=llm,
+        )
     flags = compute_behavioral_flags(
         time_to_first_keystroke_ms=payload.time_to_first_keystroke_ms,
         total_time_ms=payload.total_time_ms,

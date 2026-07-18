@@ -1,0 +1,37 @@
+{
+  "extracted_claims": {
+    "claims": [
+      {
+        "claim_type": "employment",
+        "claim_text": "Junior Developer at Small Shop LLC",
+        "normalized_skill": null,
+        "asserted_years": null,
+        "asserted_start": "2023-01",
+        "asserted_end": null,
+        "asserted_org": "Small Shop LLC",
+        "quoted_source_text": "Junior Developer, Small Shop LLC (2023-01 to present)"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "12 years of Python",
+        "normalized_skill": "python",
+        "asserted_years": 12.0,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "12 years of Python"
+      },
+      {
+        "claim_type": "skill",
+        "claim_text": "JavaScript",
+        "normalized_skill": "javascript",
+        "asserted_years": null,
+        "asserted_start": null,
+        "asserted_end": null,
+        "asserted_org": null,
+        "quoted_source_text": "JavaScript"
+      }
+    ]
+  },
+  "evidence": []
+}

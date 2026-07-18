@@ -6,7 +6,9 @@ import { safeRedirectPath } from "@/lib/utils";
 // it must never require a recruiter session. Everything else under the app is recruiter-only.
 // /auth/callback MUST stay public: it's hit mid-OAuth, before any session cookie exists —
 // bouncing it to /login drags the one-shot ?code= along and kills the PKCE exchange.
-const PUBLIC_PATH_PREFIXES = ["/login", "/auth", "/interview", "/_next", "/favicon.ico"];
+// /benchmarks is a public, unauthenticated marketing/technical page — reproducible accuracy
+// numbers anyone can see without a recruiter session.
+const PUBLIC_PATH_PREFIXES = ["/login", "/auth", "/interview", "/benchmarks", "/_next", "/favicon.ico"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));

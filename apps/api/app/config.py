@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_jwks_url: str = ""
     supabase_service_role_key: str = ""
-    supabase_storage_bucket: str = "resumes"
+    supabase_storage_bucket: str = "resumes"  # private bucket for candidate resumes
+    supabase_reports_bucket: str = "recruitx-reports"  # private bucket for white-label branded PDFs
+    # Force local-disk storage even when Supabase is configured (local dev/testing without creds).
+    use_local_storage: bool = False
 
     llm_provider: str = "gemini"
     gemini_api_key: str = ""
@@ -28,11 +31,29 @@ class Settings(BaseSettings):
 
     github_token: str = ""
 
+    # Optional evidence connectors, opt-in per source. Off by default so a fresh deploy never
+    # makes surprise outbound calls; each still routes through the URL+substring guardrail.
+    enable_semantic_scholar: bool = False
+    enable_google_patents: bool = False
+    enable_package_ownership: bool = False
+
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
 
     interview_token_ttl_hours: int = 72
+
+    # --- White-label public API + billing (Phase 4) ---
+    # Per-key requests/minute for /api/v1/public. In-memory limiter; see public_api/rate_limit.py.
+    public_api_rate_limit_per_min: int = 10
+    # Stripe metered billing. Scaffold only: no event is sent unless BOTH a key's stripe_customer_id
+    # and this secret are set. Never collect card details here — Stripe onboarding is manual.
+    stripe_api_key: str = ""
+    stripe_meter_event_name: str = "recruitx_verification"
+
+    # Where the eval harness writes its results (latest.json / latest.md). Empty -> the router
+    # computes the default repo-root `evals/results` path. Set in tests to point at a fixture dir.
+    benchmarks_results_dir: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:

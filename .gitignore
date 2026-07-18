@@ -12,8 +12,10 @@ vector_store/
 
 # apps/api
 apps/api/data/
-apps/api/dev.db
+apps/api/*.db
 apps/api/.pytest_cache/
+apps/api/.mypy_cache/
+apps/api/.ruff_cache/
 apps/api/htmlcov/
 apps/api/.coverage
 

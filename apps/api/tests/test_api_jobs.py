@@ -34,7 +34,7 @@ def _jd_response():
 async def test_create_job_extracts_requirements(client, fake_provider):
     fake_provider.responses.append(_jd_response())
 
-    response = await client.post("/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
+    response = await client.post("/api/v1/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
 
     assert response.status_code == 201
     body = response.json()
@@ -47,12 +47,12 @@ async def test_create_job_extracts_requirements(client, fake_provider):
 @pytest.mark.asyncio
 async def test_list_jobs_includes_candidate_count(client, fake_provider):
     fake_provider.responses.append(_jd_response())
-    create_resp = await client.post("/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
+    create_resp = await client.post("/api/v1/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
     job_id = create_resp.json()["id"]
 
-    await client.post(f"/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
+    await client.post(f"/api/v1/jobs/{job_id}/candidates", json={"name": "Jane Doe"})
 
-    list_resp = await client.get("/jobs")
+    list_resp = await client.get("/api/v1/jobs")
     assert list_resp.status_code == 200
     jobs = list_resp.json()
     assert len(jobs) == 1
@@ -61,18 +61,18 @@ async def test_list_jobs_includes_candidate_count(client, fake_provider):
 
 @pytest.mark.asyncio
 async def test_get_job_not_found_returns_404(client):
-    response = await client.get("/jobs/does-not-exist")
+    response = await client.get("/api/v1/jobs/does-not-exist")
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_replace_requirements_marks_reviewed(client, fake_provider):
     fake_provider.responses.append(_jd_response())
-    create_resp = await client.post("/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
+    create_resp = await client.post("/api/v1/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
     job_id = create_resp.json()["id"]
 
     replace_resp = await client.put(
-        f"/jobs/{job_id}/requirements",
+        f"/api/v1/jobs/{job_id}/requirements",
         json={
             "requirements": [
                 {
@@ -102,12 +102,12 @@ async def test_jobs_are_scoped_to_owner(client, fake_provider, db_session):
     await db_session.commit()
 
     fake_provider.responses.append(_jd_response())
-    create_resp = await client.post("/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
+    create_resp = await client.post("/api/v1/jobs", json={"title": "Backend Engineer", "jd_raw": JD_TEXT})
     job_id = create_resp.json()["id"]
 
     from app.auth.dependencies import get_current_user
     from app.main import app
 
     app.dependency_overrides[get_current_user] = lambda: other_user
-    response = await client.get(f"/jobs/{job_id}")
+    response = await client.get(f"/api/v1/jobs/{job_id}")
     assert response.status_code == 404

@@ -19,6 +19,8 @@ from pydantic import BaseModel
 from app.config import Settings, get_settings
 from app.llm.errors import LLMTransientError, LLMUnavailableError
 from app.llm.provider import FakeProvider, GeminiProvider, LLMProvider, OpenAIProvider
+from app.observability.context import current_context
+from app.observability.cost_tracker import record_llm_call
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -111,6 +113,9 @@ class LLMClient:
         # (tests, evals) must be the only thing that ever gets called.
         self._fallback = None if provider is not None else _build_fallback_provider(self._settings)
         self._tracer = LangfuseTracer(self._settings)
+        # Fire-and-forget cost-log tasks. Kept referenced so they aren't GC'd mid-flight; never
+        # awaited by the pipeline so a slow/locked telemetry write can't stall real work.
+        self._cost_tasks: set[asyncio.Task] = set()
 
     @property
     def provider_name(self) -> str:
@@ -128,15 +133,17 @@ class LLMClient:
             plan.append((self._fallback, _FALLBACK_ATTEMPTS))
 
         last_transient: LLMTransientError | None = None
+        retry_count = 0  # retries already spent when the successful call finally lands (0 = first try)
         for stage, (provider, max_attempts) in enumerate(plan):
             for attempt in range(1, max_attempts + 1):
                 try:
                     return await self._call_once(
                         provider, system=system, user=user, schema=schema,
-                        prompt_version=prompt_version, trace_name=trace_name,
+                        prompt_version=prompt_version, trace_name=trace_name, retry_count=retry_count,
                     )
                 except LLMTransientError as exc:
                     last_transient = exc
+                    retry_count += 1
                     logger.warning("LLM transient failure (attempt %d/%d): %s", attempt, max_attempts, exc)
                     if attempt < max_attempts:
                         delay = min(_BACKOFF_BASE_SECONDS * 2 ** (attempt - 1), _BACKOFF_MAX_SECONDS)
@@ -152,13 +159,52 @@ class LLMClient:
         raise LLMUnavailableError() from last_transient
 
     async def _call_once(
-        self, provider: LLMProvider, *, system: str, user: str, schema: type[T], prompt_version: str, trace_name: str
+        self,
+        provider: LLMProvider,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        prompt_version: str,
+        trace_name: str,
+        retry_count: int,
     ) -> LLMCallResult:
+        ctx = current_context()
+        candidate_id = ctx.candidate_id if ctx else None
+        job_id = ctx.job_id if ctx else None
+
         start = time.perf_counter()
-        with self._tracer.span(trace_name, prompt_version=prompt_version, provider=provider.name):
+        with self._tracer.span(
+            trace_name,
+            candidate_id=candidate_id,
+            job_id=job_id,
+            pipeline_stage=trace_name,
+            model=provider.model,
+            provider=provider.name,
+            prompt_version=prompt_version,
+            retry_count=retry_count,
+        ):
             result = await provider.generate_structured(system=system, user=user, schema=schema)
         latency_ms = int((time.perf_counter() - start) * 1000)
         cost = _estimate_cost_usd(result.model, result.input_tokens, result.output_tokens)
+
+        # Persist cost/latency only when we know which candidate this belongs to. Scoping to a
+        # candidate keeps stray/tooling calls out of the table and makes the per-candidate cost
+        # endpoint the single source of truth.
+        if candidate_id is not None:
+            self._schedule_cost_log(
+                candidate_id=candidate_id,
+                job_id=job_id,
+                pipeline_stage=trace_name,
+                model=result.model,
+                provider=provider.name,
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                cost_usd=cost,
+                latency_ms=latency_ms,
+                retry_count=retry_count,
+            )
+
         return LLMCallResult(
             data=result.data,
             model=result.model,
@@ -168,6 +214,24 @@ class LLMClient:
             cost_usd=cost,
             latency_ms=latency_ms,
         )
+
+    def _schedule_cost_log(self, **kwargs) -> None:
+        """Schedule a best-effort cost write without blocking the caller. If there's no running
+        loop (shouldn't happen from an async call site) we simply skip — telemetry is optional."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        task = loop.create_task(record_llm_call(**kwargs))
+        self._cost_tasks.add(task)
+        task.add_done_callback(self._cost_tasks.discard)
+
+    async def drain_cost_logs(self) -> None:
+        """Wait for any in-flight cost writes to finish. Call at the end of a pipeline run (after
+        its own commits) so the cost rows are queryable immediately and no task leaks past the
+        request. Safe to call when there's nothing pending."""
+        if self._cost_tasks:
+            await asyncio.gather(*list(self._cost_tasks), return_exceptions=True)
 
 
 _default_client: LLMClient | None = None

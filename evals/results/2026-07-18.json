@@ -1,0 +1,477 @@
+{
+  "generated_at": "2026-07-18T03:28:58.757090+00:00",
+  "git_commit": "c5ebaa0",
+  "provider": "recorded-fixture",
+  "dataset": {
+    "name": "golden_v1",
+    "path": "evals/datasets/golden_v1.jsonl",
+    "case_count": 15,
+    "buckets": {
+      "real": 5,
+      "planted_lie": 5,
+      "edge": 5
+    }
+  },
+  "metrics": {
+    "claim_extraction": {
+      "precision": 0.9836,
+      "recall": 0.9836,
+      "f1": 0.9836,
+      "tp": 60,
+      "fp": 1,
+      "fn": 1
+    },
+    "citation_validity": {
+      "span_citation_validity": 1.0,
+      "accepted_claims_checked": 61,
+      "invalid_span_citations": 0,
+      "url_citations_seen": 4,
+      "url_citations_resolved_live": 0,
+      "note": "URL resolution is exercised by the connector tests, not the offline golden run."
+    },
+    "verdict_accuracy": {
+      "verdict_match_rate": 1.0,
+      "claims_scored": 61,
+      "fabrication_safety_rate": 1.0,
+      "fabricated_claims": 6,
+      "false_verifications": []
+    }
+  },
+  "runs": {
+    "claim_extraction": {
+      "metric": "claim_extraction",
+      "case_count": 15,
+      "overall": {
+        "precision": 0.9836,
+        "recall": 0.9836,
+        "f1": 0.9836,
+        "tp": 60,
+        "fp": 1,
+        "fn": 1
+      },
+      "per_case": [
+        {
+          "id": "real_01_backend_python",
+          "kind": "real",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "real_02_frontend_react",
+          "kind": "real",
+          "precision": 0.8,
+          "recall": 1.0,
+          "f1": 0.8889,
+          "tp": 4,
+          "fp": 1,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": [
+            "jest"
+          ]
+        },
+        {
+          "id": "real_03_ml_engineer",
+          "kind": "real",
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1": 0.8889,
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "discarded_uncitable": 0,
+          "missed": [
+            "spark"
+          ],
+          "spurious": []
+        },
+        {
+          "id": "real_04_sre_devops",
+          "kind": "real",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "real_05_fullstack",
+          "kind": "real",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "lie_01_fake_company",
+          "kind": "planted_lie",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "lie_02_overlapping_fulltime",
+          "kind": "planted_lie",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "lie_03_fake_certification",
+          "kind": "planted_lie",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "lie_04_years_exceed_career",
+          "kind": "planted_lie",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "lie_05_false_oss_authorship",
+          "kind": "planted_lie",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "edge_01_career_gap",
+          "kind": "edge",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "edge_02_non_english_name",
+          "kind": "edge",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "edge_03_firewall_only_work",
+          "kind": "edge",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "edge_04_sparse_projects_only",
+          "kind": "edge",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 1,
+          "missed": [],
+          "spurious": []
+        },
+        {
+          "id": "edge_05_partial_github_match",
+          "kind": "edge",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "discarded_uncitable": 0,
+          "missed": [],
+          "spurious": []
+        }
+      ]
+    },
+    "citation_validity": {
+      "metric": "citation_validity",
+      "case_count": 15,
+      "overall": {
+        "span_citation_validity": 1.0,
+        "accepted_claims_checked": 61,
+        "invalid_span_citations": 0,
+        "url_citations_seen": 4,
+        "url_citations_resolved_live": 0,
+        "note": "URL resolution is exercised by the connector tests, not the offline golden run."
+      },
+      "per_case": [
+        {
+          "id": "real_01_backend_python",
+          "accepted_claims": 5,
+          "valid_span_citations": 5,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "real_02_frontend_react",
+          "accepted_claims": 5,
+          "valid_span_citations": 5,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "real_03_ml_engineer",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "real_04_sre_devops",
+          "accepted_claims": 5,
+          "valid_span_citations": 5,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "real_05_fullstack",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "lie_01_fake_company",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "lie_02_overlapping_fulltime",
+          "accepted_claims": 3,
+          "valid_span_citations": 3,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "lie_03_fake_certification",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "lie_04_years_exceed_career",
+          "accepted_claims": 3,
+          "valid_span_citations": 3,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "lie_05_false_oss_authorship",
+          "accepted_claims": 3,
+          "valid_span_citations": 3,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "edge_01_career_gap",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "edge_02_non_english_name",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "edge_03_firewall_only_work",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "edge_04_sparse_projects_only",
+          "accepted_claims": 4,
+          "valid_span_citations": 4,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        },
+        {
+          "id": "edge_05_partial_github_match",
+          "accepted_claims": 5,
+          "valid_span_citations": 5,
+          "invalid_span_citations": 0,
+          "span_validity": 1.0
+        }
+      ]
+    },
+    "verdict_accuracy": {
+      "metric": "verdict_accuracy",
+      "case_count": 15,
+      "overall": {
+        "verdict_match_rate": 1.0,
+        "claims_scored": 61,
+        "fabrication_safety_rate": 1.0,
+        "fabricated_claims": 6,
+        "false_verifications": []
+      },
+      "per_case": [
+        {
+          "id": "real_01_backend_python",
+          "kind": "real",
+          "claims": 5,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "real_02_frontend_react",
+          "kind": "real",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "real_03_ml_engineer",
+          "kind": "real",
+          "claims": 5,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "real_04_sre_devops",
+          "kind": "real",
+          "claims": 5,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "real_05_fullstack",
+          "kind": "real",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "lie_01_fake_company",
+          "kind": "planted_lie",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "lie_02_overlapping_fulltime",
+          "kind": "planted_lie",
+          "claims": 3,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "lie_03_fake_certification",
+          "kind": "planted_lie",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "lie_04_years_exceed_career",
+          "kind": "planted_lie",
+          "claims": 3,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "lie_05_false_oss_authorship",
+          "kind": "planted_lie",
+          "claims": 3,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "edge_01_career_gap",
+          "kind": "edge",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "edge_02_non_english_name",
+          "kind": "edge",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "edge_03_firewall_only_work",
+          "kind": "edge",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "edge_04_sparse_projects_only",
+          "kind": "edge",
+          "claims": 4,
+          "verdict_match": 1.0
+        },
+        {
+          "id": "edge_05_partial_github_match",
+          "kind": "edge",
+          "claims": 5,
+          "verdict_match": 1.0
+        }
+      ]
+    }
+  }
+}
