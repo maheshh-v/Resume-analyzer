@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_jwks_url: str = ""
     supabase_service_role_key: str = ""
-    supabase_storage_bucket: str = "resumes"
+    supabase_storage_bucket: str = "resumes"  # private bucket for candidate resumes
+    supabase_reports_bucket: str = "recruitx-reports"  # private bucket for white-label branded PDFs
+    # Force local-disk storage even when Supabase is configured (local dev/testing without creds).
+    use_local_storage: bool = False
 
     llm_provider: str = "gemini"
     gemini_api_key: str = ""

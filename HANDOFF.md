@@ -61,7 +61,10 @@ All optional; sensible defaults keep everything working with zero config.
 | `PUBLIC_API_RATE_LIMIT_PER_MIN` | `10` | Per-key rate limit |
 | `STRIPE_API_KEY` | unset → billing no-op | Stripe metered billing |
 | `STRIPE_METER_EVENT_NAME` | `recruitx_verification` | Stripe meter event name |
-| `SUPABASE_STORAGE_BUCKET` | `resumes` | Bucket for branded PDFs (needs a Storage bucket) |
+| `SUPABASE_STORAGE_BUCKET` | `resumes` | Private bucket for candidate resumes |
+| `SUPABASE_REPORTS_BUCKET` | `recruitx-reports` | Private bucket for white-label branded PDFs |
+| `SUPABASE_SERVICE_ROLE_KEY` | unset | Admin key, **server-side only** — put a real value in `.env` only, never `.env.example`/logs/commits |
+| `USE_LOCAL_STORAGE` | `false` | Force local-disk storage (dev/testing without Supabase creds) |
 
 ## New DB migrations
 
@@ -104,8 +107,10 @@ python -m app.cli create_api_key --org "Acme Staffing" --quota 500
   Evidence Ledger. Wiring it through the full ledgered Candidate flow is a follow-up.
 - **package_ownership auto-invocation** uses `github_login` as an npm-maintainer handle (heuristic);
   explicit PyPI/package ownership needs a claimed-packages field on the candidate (not modelled yet).
-- **Supabase Storage + signed PDF URLs** need a Storage bucket + service key; the scaffold falls back
-  to local disk and returns the storage path with `pdf_url: null`.
+- **Supabase Storage for branded PDFs is wired** (private `recruitx-reports` bucket, 7-day signed
+  URLs). Needs the bucket created + the service key in `.env`; without them (or with
+  `USE_LOCAL_STORAGE=true`) it falls back to local disk and returns `pdf_url: null`. See the
+  "Supabase Storage" section above.
 - **Stripe is scaffold-only:** onboarding a customer (Stripe customer + meter) is manual; no events
   fire without `STRIPE_API_KEY` + a key's `stripe_customer_id`. No card collection anywhere.
 - **Rate limiter is in-memory, single-process** — a multi-instance deploy should move it to Redis.
@@ -134,13 +139,40 @@ app) and are unaffected; only the API calls that page makes moved.
 The frontend prepends `/api/v1` once, in `apps/web/src/lib/api-client.ts` (`request()`); non-API
 fetches like `/health` bypass it.
 
+## Supabase Storage for branded PDFs (`recruitx-reports`)
+
+The white-label `/verify` flow stores each branded PDF in a **private** Supabase Storage bucket and
+returns a **7-day signed URL** (`app/storage/report_storage.py`). Local disk is the fallback for dev.
+
+**Manual step (Mihir):** in the Supabase dashboard → Storage → **New bucket**, create
+`recruitx-reports` with **Public unchecked** (private). Reports must never be world-readable.
+
+**Configure** (in `apps/api/.env`, real values there **only** — never `.env.example`):
+```
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<paste the service_role key here — server-side only>
+SUPABASE_REPORTS_BUCKET=recruitx-reports
+USE_LOCAL_STORAGE=false          # set true to force local disk for local testing
+```
+
+**Service-key safety (enforced):** the key is read from settings only — it is never logged, never
+returned in an API response, and never committed (`.env` is gitignored — verified via
+`git check-ignore apps/api/.env`). Only its use as an `Authorization: Bearer` header (server→Supabase)
+touches it.
+
+**Rotating the service key:** Supabase dashboard → Settings → API → roll the `service_role` key,
+then paste the new value into `apps/api/.env` (`SUPABASE_SERVICE_ROLE_KEY`) and restart the API. No
+code change needed. Rotate immediately if a key was ever shared in plaintext (e.g. chat/email).
+
 ## Test count: before vs after
 
 | | Before | After |
 |---|---|---|
-| Backend (`apps/api`, `pytest --collect-only`) | 88 | 133 |
+| Backend (`apps/api`, `pytest --collect-only`) | 88 | 147 |
 | Eval harness (`evals/tests`) | 0 | 26 |
-| **Total** | **88** | **159** |
+| **Total** | **88** | **173** |
+
+(+6 legacy-redirect tests, +8 storage tests since the first four phases.)
 
 Full suite green after each phase (`pytest -x`).
 

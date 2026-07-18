@@ -12,13 +12,12 @@ learns the terminal state. Never raises out of the background task.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 
 import httpx
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.config import get_settings
 from app.db.base import utcnow
 from app.db.session import SessionLocal
 from app.llm.client import LLMClient, get_llm_client
@@ -30,6 +29,7 @@ from app.pipeline.extract_jd import extract_job_requirements
 from app.pipeline.match import ClaimLike, RequirementLike, match_claims_to_requirements
 from app.pipeline.report import EvidenceRow, build_hiring_summary
 from app.public_api.pdf import render_report_pdf
+from app.storage.report_storage import store_report_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -68,18 +68,11 @@ async def run_public_verification(
     webhook_url: str | None = None,
     session_factory: async_sessionmaker = SessionLocal,
     llm: LLMClient | None = None,
-    uploader: Callable | None = None,
     webhook_poster: Callable[[str, dict], Awaitable[None]] | None = None,
 ) -> None:
     llm = llm or get_llm_client()
-    settings = get_settings()
     if logo_bytes is None and logo_url:
         logo_bytes = await _fetch_logo(logo_url)
-    if uploader is None:
-        if settings.supabase_url and settings.supabase_service_role_key:
-            from app.storage.supabase_storage import upload_resume as uploader  # noqa: PLC0415
-        else:
-            from app.storage.local_storage import upload_resume as uploader  # noqa: PLC0415
     poster = webhook_poster or _default_webhook_post
 
     status = "failed"
@@ -132,7 +125,7 @@ async def run_public_verification(
             summary_dict = asdict(summary)
 
             pdf_bytes = render_report_pdf(summary=summary_dict, org_name=org_name, logo_bytes=logo_bytes)
-            pdf_path = await uploader(candidate_id=report_id, filename="report.pdf", content=pdf_bytes)
+            pdf_path = await store_report_pdf(report_id=report_id, content=pdf_bytes)
 
             report.report_json = summary_dict
             report.pdf_storage_path = pdf_path

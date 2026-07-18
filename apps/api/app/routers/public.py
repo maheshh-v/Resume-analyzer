@@ -8,7 +8,6 @@ one Stripe meter event (scaffold), and returns a report_id to poll.
 import base64
 import binascii
 import io
-import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,13 +16,12 @@ from app.billing.meter import record_verification_usage
 from app.db.session import get_db
 from app.models.api_key import ApiKey
 from app.models.public_report import PublicReport
+from app.pipeline.text_extraction import extract_text_from_pdf
 from app.public_api.auth import require_api_key
 from app.public_api.rate_limit import rate_limited_api_key
 from app.public_api.verify_job import run_public_verification
-from app.pipeline.text_extraction import extract_text_from_pdf
 from app.schemas.public import PublicReportOut, VerifyAccepted, VerifyRequest
-
-logger = logging.getLogger(__name__)
+from app.storage.report_storage import signed_report_url
 
 router = APIRouter(prefix="/api/v1/public", tags=["public-api"])
 
@@ -44,21 +42,6 @@ def _decode_resume(resume: str) -> str:
         except Exception as exc:  # a corrupt PDF is a client error, not a 500
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Could not read the PDF: {exc}") from exc
     return resume
-
-
-async def _signed_pdf_url(storage_path: str | None) -> str | None:
-    from app.config import get_settings
-
-    settings = get_settings()
-    if not storage_path or not (settings.supabase_url and settings.supabase_service_role_key):
-        return None
-    try:
-        from app.storage.supabase_storage import create_signed_url
-
-        return await create_signed_url(storage_path)
-    except Exception:
-        logger.info("public api: could not sign %s", storage_path, exc_info=True)
-        return None
 
 
 @router.post("/verify", response_model=VerifyAccepted, status_code=status.HTTP_202_ACCEPTED)
@@ -117,7 +100,7 @@ async def get_public_report(
         status=report.status,
         report=report.report_json,
         pdf_storage_path=report.pdf_storage_path,
-        pdf_url=await _signed_pdf_url(report.pdf_storage_path),
+        pdf_url=await signed_report_url(report.pdf_storage_path),
         error=report.error,
         created_at=report.created_at.isoformat() if report.created_at else None,
         completed_at=report.completed_at.isoformat() if report.completed_at else None,
