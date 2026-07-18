@@ -40,6 +40,14 @@ class Settings(BaseSettings):
 
     interview_token_ttl_hours: int = 72
 
+    # --- White-label public API + billing (Phase 4) ---
+    # Per-key requests/minute for /api/v1/public. In-memory limiter; see public_api/rate_limit.py.
+    public_api_rate_limit_per_min: int = 10
+    # Stripe metered billing. Scaffold only: no event is sent unless BOTH a key's stripe_customer_id
+    # and this secret are set. Never collect card details here — Stripe onboarding is manual.
+    stripe_api_key: str = ""
+    stripe_meter_event_name: str = "recruitx_verification"
+
     # Where the eval harness writes its results (latest.json / latest.md). Empty -> the router
     # computes the default repo-root `evals/results` path. Set in tests to point at a fixture dir.
     benchmarks_results_dir: str = ""

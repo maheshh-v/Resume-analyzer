@@ -2,6 +2,7 @@
 relationship() references before metadata is used (Alembic autogenerate, create_all, tests)."""
 
 from app.db.base import Base
+from app.models.api_key import ApiKey
 from app.models.candidate import Candidate
 from app.models.claim import Claim
 from app.models.decision import Decision
@@ -11,6 +12,7 @@ from app.models.interview import Interview, InterviewAnswer, InterviewQuestion
 from app.models.job import Job, JobRequirement
 from app.models.ledger import LedgerEvent
 from app.models.llm_call_log import LLMCallLog
+from app.models.public_report import PublicReport
 from app.models.user import User
 
 __all__ = [
@@ -28,4 +30,6 @@ __all__ = [
     "Decision",
     "LedgerEvent",
     "LLMCallLog",
+    "ApiKey",
+    "PublicReport",
 ]
